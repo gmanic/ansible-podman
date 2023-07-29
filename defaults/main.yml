@@ -1,0 +1,25 @@
+---
+
+container_storage_dir_base: /srv
+
+podman_rootless: true
+# podman_user: "{{ 'podman' if podman_rootless | bool else 'root' }}"
+# podman_group: "{{ 'podman' if podman_rootless | bool else 'root' }}"
+podman_user: podman
+podman_group: podman
+# podman_subuid_range: "300000:65536"
+# podman_subgid_range: "300000:65536"
+
+podman_packages:
+  - aardvark-dns
+  - fuse-overlayfs
+  - podman
+  - podman-plugins
+  - shadow-utils
+  - slirp4netns
+
+
+podman_network_subnet: '10.83.180.0/24'
+podman_network_gateway: '10.83.180.1'
+podman_network_iprange: '10.83.180.128/25'
+podman_network_name: 'podman_sleif_http_rootless'

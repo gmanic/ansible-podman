@@ -1,0 +1,164 @@
+---
+
+- name: Install podman
+  ansible.builtin.package:
+    name: "{{ podman_packages }}"
+    state: present
+
+# - name: Enable podman.sock
+#   ansible.builtin.service:
+#     name: podman.socket
+#     state: started
+#     enabled: true
+#   tags:
+#     - pre_tasks
+#     - podman
+
+- name: Prepare /etc/containers/containers.conf
+  ansible.builtin.copy:
+    dest: /etc/containers/containers.conf
+    mode: "0644"
+    force: false
+    content: |
+      # The containers configuration file specifies all of the available configuration
+      # command-line options/flags for container engine tools like Podman & Buildah,
+      # but in a TOML format that can be easily modified and versioned.
+      #
+      # Please refer to containers.conf(5) for details of all configuration options.
+      # Not all container engines implement all of the options.
+      # All of the options have hard coded defaults and these options will override
+      # the built in defaults. Users can then override these options via the command
+      # line. Container engines will read containers.conf files in up to three
+      # locations in the following order:
+      #  1. /usr/share/containers/containers.conf
+      #  2. /etc/containers/containers.conf
+      #  3. $HOME/.config/containers/containers.conf (Rootless containers ONLY)
+      #  Items specified in the latter containers.conf, if they exist, override the
+      # previous containers.conf settings, or the default settings.
+      #
+  tags:
+    - pre_tasks
+    - podman
+
+- name: Configure timezone
+  community.general.ini_file:
+    path: /etc/containers/containers.conf
+    mode: "0644"
+    section: containers
+    option: tz
+    value: '"local"'
+    no_extra_spaces: true
+  tags:
+    - pre_tasks
+    - podman
+
+- name: Configure podman storage
+  community.general.ini_file:
+    path: /etc/containers/storage.conf
+    mode: "0644"
+    section: "{{ item.section }}"
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+    state: "{{ item.state }}"
+    no_extra_spaces: false
+  loop:
+    - {section: 'storage', option: 'driver', value: '"overlay"',
+       state: "{{ 'present' if podman_rootless | bool else 'absent' }}" }
+    - {section: 'storage.options.overlay', option: 'mount_program', value: '"/usr/bin/fuse-overlayfs"',
+       state: "{{ 'present' if podman_rootless | bool else 'absent' }}" }
+
+- name: Create the podman group
+  ansible.builtin.group:
+    name: "{{ podman_group }}"
+    state: present
+
+- name: Create the podman user
+  ansible.builtin.user:
+    name: "{{ podman_user }}"
+    state: present
+    group: "{{ podman_group }}"
+    home: "{{ container_storage_dir_base + '/' + podman_user }}"
+    createhome: true
+
+- name: Add podman user to the podman group
+  ansible.builtin.user:
+    name: "{{ podman_user }}"
+    groups: "{{ podman_group }}"
+    append: true
+
+- name: Create podman container base driver
+  ansible.builtin.file:
+    path: "{{ container_storage_dir_base + '/' + podman_user + '/.local/share/containers' }}"
+    state: directory
+    owner: "{{ podman_user }}"
+    mode: '0700'
+
+- name: Substitute file contexts for path podman .local/share/containers with /var/lib/containers
+  community.general.sefcontext:
+    target: "{{ container_storage_dir_base + '/' + podman_user + '/.local/share/containers' }}"
+    substitute: /var/lib/containers
+    state: present
+
+- name: Set selinux policy for podman user home
+  community.general.sefcontext:
+    target: '{{ item.target }}'
+    setype: "{{ item.setype }}"
+    reload: true
+    state: "{{ item.state }}"
+  register: filecontext
+  with_items:
+    - { target: '{{ container_storage_dir_base + "/" + podman_user }}(/.+)?', setype: 'user_home_dir_t', state: 'present' }
+  when: ansible_selinux and ansible_selinux.status == "enabled"
+
+# - ansible.builtin.debug:
+#     msg: "{{ filecontext.results[0] }}"
+
+- name: Run restore context to reload selinux
+  ansible.builtin.command:
+    cmd: restorecon -F -R -v {{ item.target }}
+  with_items:
+    - { index: 0, target: '{{ container_storage_dir_base + "/" + podman_user }}' }
+  when: # noqa: no-handler
+    - filecontext.results[item.index] is changed
+    - ansible_selinux and ansible_selinux.status == "enabled"
+  register: _result
+  changed_when: _result.rc != 0
+
+- name: Create podman container base driver
+  ansible.builtin.file:
+    path: "{{ container_storage_dir_base + '/' + podman_user + '/.config/systemd/user' }}"
+    state: directory
+    owner: "{{ podman_user }}"
+    mode: '0700'
+
+- name: Enable systemd linger mode for podman user
+  ansible.builtin.command:
+    cmd: loginctl enable-linger {{ podman_user }}
+    creates: "{{ '/var/lib/systemd/linger/' + podman_user }}"
+
+# looks like subuid and subgid file will be handled automatically
+# - name: Set up /etc/subuid for podman user
+#   lineinfile:
+#     path: /etc/subuid
+#     line: "{{ podman_user }}:{{ podman_subuid_range }}"
+#     create: true
+
+# - name: Set up /etc/subgid for podman user
+#   lineinfile:
+#     path: /etc/subgid
+#     line: "{{ podman_user }}:{{ podman_subgid_range }}"
+#     create: true
+
+
+- name: Podman network
+  containers.podman.podman_network:
+    name: "{{ podman_network_name }}"
+    driver: 'bridge'
+    internal: false
+    ip_range: "{{ podman_network_iprange }}"
+    subnet: "{{ podman_network_subnet }}"
+    gateway: "{{ podman_network_gateway }}"
+    disable_dns: false
+    ipv6: false
+  become: true
+  become_user: "{{ podman_user }}"
