@@ -200,12 +200,12 @@
 
 - name: Podman network
   containers.podman.podman_network:
-    name: "{{ podman_network_name }}"
+    name: "{{ podman_networks.podman_network_root.podman_network_name }}"
     driver: 'bridge'
     internal: false
-    ip_range: "{{ podman_network_iprange }}"
-    subnet: "{{ podman_network_subnet }}"
-    gateway: "{{ podman_network_gateway }}"
+    ip_range: "{{ podman_networks.podman_network_root.podman_network_iprange }}"
+    subnet: "{{ podman_networks.podman_network_root.podman_network_subnet }}"
+    gateway: "{{ podman_networks.podman_network_root.podman_network_gateway }}"
     disable_dns: false
     ipv6: false
 
@@ -213,12 +213,11 @@
   become: true
   become_user: "{{ podman_user }}"
   containers.podman.podman_network:
-    name: "{{ podman_network_rootless_name }}"
+    name: "{{ podman_networks.podman_network_root.podman_network_name }}"
     driver: 'bridge'
     internal: false
-    ip_range: "{{ podman_network_rootless_iprange }}"
-    subnet: "{{ podman_network_rootless_subnet }}"
-    gateway: "{{ podman_network_rootless_gateway }}"
+    ip_range: "{{ podman_networks.podman_network_root.podman_network_iprange }}"
+    subnet: "{{ podman_networks.podman_network_root.podman_network_subnet }}"
+    gateway: "{{ podman_networks.podman_network_root.podman_network_gateway }}"
     disable_dns: false
     ipv6: false
-
