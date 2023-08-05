@@ -1,0 +1,5 @@
+---
+
+role_operations:
+  - podman_install
+  - pod_create
