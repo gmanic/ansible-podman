@@ -9,27 +9,24 @@
   when:
     - pod_name is defined
     - pod_name | length > 0
-- debug: var=_pod_info
-- pause:
-- name: Create the pod
+# - debug: var=_pod_info
+# - pause:
+- name: Generate systemd unit file for the pod
   become: "{{ podman_rootless | d(true) | bool }}"
   become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
-  containers.podman.podman_pod:
+  containers.podman.podman_generate_systemd:
     name: "{{ pod_name }}"
-    publish: "{{ pod_published_ports | default(omit) }}"
-    hostname: "{{ pod_name }}"
-    generate_systemd:
-      path: "{{ _systemd_service_files_dir }}"
-      restart_policy: always
-    network: "{{ podman_network_name }}"
-    state: started
-  register: _pod_create_result
+    dest: "{{ _systemd_service_files_dir }}"
+    restart_policy: always
+    no_header: true
+  register: _pod_generate_systemd_result
   when:
     - pod_name is defined
     - pod_name | length > 0
-    # - _pod_info.pods | length == 0
-- debug: var=_pod_create_result
+    - _pod_info.pods | length > 0
+- debug: var=_pod_generate_systemd_result
 - pause:
+
 - name: Enable systemd service for pod
   become: "{{ podman_rootless | d(true) | bool }}"
   become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
@@ -37,9 +34,10 @@
     XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"
   ansible.builtin.systemd:
     name: "{{ 'pod-' + pod_name }}"
+    daemon_reload: true
     enabled: true
     scope: "{{ _systemd_scope }}"
   when:
     - pod_name is defined
     - pod_name | length > 0
-    # - _pod_info.pods | length == 0
+    - _pod_info.pods | length > 0

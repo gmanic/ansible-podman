@@ -3,3 +3,4 @@
 role_operations:
   - podman_install
   - pod_create
+  - pod_generate_systemd
