@@ -1,43 +1,39 @@
 ---
 
-- name: Gather info about the pod
+- name: Pod generate systemd block
   become: "{{ podman_rootless | d(true) | bool }}"
   become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
-  containers.podman.podman_pod_info:
-    name: "{{ pod_name }}"
-  register: _pod_info
+  tags:
+    - pod_generate_systemd
   when:
     - pod_name is defined
     - pod_name | length > 0
-# - debug: var=_pod_info
-# - pause:
-- name: Generate systemd unit file for the pod
-  become: "{{ podman_rootless | d(true) | bool }}"
-  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
-  containers.podman.podman_generate_systemd:
-    name: "{{ pod_name }}"
-    dest: "{{ _systemd_service_files_dir }}"
-    restart_policy: always
-    no_header: true
-  register: _pod_generate_systemd_result
-  when:
-    - pod_name is defined
-    - pod_name | length > 0
-    - _pod_info.pods | length > 0
-- debug: var=_pod_generate_systemd_result
-- pause:
+  block:
+    - name: Gather info about the pod
+      containers.podman.podman_pod_info:
+        name: "{{ pod_name }}"
+      register: _pod_info
+    # - debug: var=_pod_info
+    # - pause:
 
-- name: Enable systemd service for pod
-  become: "{{ podman_rootless | d(true) | bool }}"
-  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
-  environment:
-    XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"
-  ansible.builtin.systemd:
-    name: "{{ 'pod-' + pod_name }}"
-    daemon_reload: true
-    enabled: true
-    scope: "{{ _systemd_scope }}"
-  when:
-    - pod_name is defined
-    - pod_name | length > 0
-    - _pod_info.pods | length > 0
+    - name: Generate systemd unit file for the pod
+      containers.podman.podman_generate_systemd:
+        name: "{{ pod_name }}"
+        dest: "{{ _systemd_service_files_dir }}"
+        restart_policy: always
+        no_header: true
+      register: _pod_generate_systemd_result
+      when:
+        - _pod_info.pods | length > 0
+
+    - name: Enable systemd service for pod
+      environment:
+        XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"
+      ansible.builtin.systemd:
+        name: "{{ 'pod-' + pod_name }}"
+        daemon_reload: true
+        enabled: true
+        scope: "{{ _systemd_scope }}"
+        state: started
+      when:
+        - _pod_info.pods | length > 0
