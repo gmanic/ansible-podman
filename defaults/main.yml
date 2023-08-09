@@ -1,6 +1,7 @@
 ---
 
 container_storage_dir_base: /srv
+container_storage_dir_base_local: /srv
 
 podman_rootless: true
 # podman_user: "{{ 'podman' if podman_rootless | bool else 'root' }}"

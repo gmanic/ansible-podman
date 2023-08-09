@@ -183,7 +183,7 @@
     no_extra_spaces: false
   loop:
     - {section: 'storage', option: 'driver', value: '"overlay"', state: 'present'}
-    - {section: 'storage.options.overlay', option: 'mount_program', value: '"/usr/bin/fuse-overlayfs"', state: 'present'}
+    - {section: 'storage.options.overlay', option: 'mount_program', value: '"/usr/bin/fuse-overlayfs"', state: 'absent'}
 
 # looks like subuid and subgid file will be handled automatically
 # - name: Set up /etc/subuid for podman user

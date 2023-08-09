@@ -1,39 +1,35 @@
 ---
 
-- name: Pod generate systemd block
+- name: Podman generate systemd become block
   become: "{{ podman_rootless | d(true) | bool }}"
   become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
   tags:
-    - pod_generate_systemd
-  when:
-    - pod_name is defined
-    - pod_name | length > 0
+    - podman_generate_systemd
   block:
-    - name: Gather info about the pod
+    - name: Podman generate systemd | gather info about the pod
       containers.podman.podman_pod_info:
-        name: "{{ pod_name }}"
+        name: "{{ target }}"
       register: _pod_info
     # - debug: var=_pod_info
     # - pause:
 
-    - name: Generate systemd unit file for the pod
+    - name: Podman generate systemd | generate systemd unit file
       containers.podman.podman_generate_systemd:
-        name: "{{ pod_name }}"
+        name: "{{ target }}"
         dest: "{{ _systemd_service_files_dir }}"
         restart_policy: always
         no_header: true
-      register: _pod_generate_systemd_result
-      when:
-        - _pod_info.pods | length > 0
+      register: _podman_generate_systemd_result
+    # - debug:
+    #     msg: "{{ (_podman_generate_systemd_result.systemd_units | dict2items | list | first).key }}"
+    # - pause:
 
-    - name: Enable systemd service for pod
+    - name: Podman generate systemd | enable systemd service
       environment:
         XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"
       ansible.builtin.systemd:
-        name: "{{ 'pod-' + pod_name }}"
+        name: "{{ 'pod-' + target if _pod_info.pods | length > 0 else 'container-' + target }}"
         daemon_reload: true
         enabled: true
         scope: "{{ _systemd_scope }}"
         state: started
-      when:
-        - _pod_info.pods | length > 0

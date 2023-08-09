@@ -1,6 +1,8 @@
 ---
 
 role_operations:
+  - container_generate_systemd
+  - podman_init_vars
   - podman_install
   - pod_create
   - pod_generate_systemd
