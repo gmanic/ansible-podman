@@ -33,6 +33,21 @@
     groups: "{{ podman_group }}"
     append: true
 
+- name: Find uid of user
+  become: true
+  become_user: "{{ podman_user }}"
+  ansible.builtin.command: "id -u"
+  register: _container_run_as_uid
+  check_mode: false
+  changed_when: false
+
+- name: Set XDG_RUNTIME_DIR in podman user .bashrc
+  become: true
+  become_user: "{{ podman_user }}"
+  ansible.builtin.lineinfile:
+    path: "{{ podman_user_home + '/.bashrc' }}"
+    line: "{{ 'export XDG_RUNTIME_DIR=/run/user/' + _container_run_as_uid.stdout }}"
+
 - name: Enable systemd linger mode for podman user
   ansible.builtin.command:
     cmd: loginctl enable-linger {{ podman_user }}

@@ -6,14 +6,16 @@
   tags:
     - podman_generate_systemd
   block:
-    - name: Podman generate systemd | gather info about the pod
+    - name: Podman generate systemd | gather info about the pod {{ target }}
       containers.podman.podman_pod_info:
         name: "{{ target }}"
       register: _pod_info
     # - debug: var=_pod_info
+    # - debug:
+    #     msg: "{{ _pod_info.pods[0].State }}"
     # - pause:
 
-    - name: Podman generate systemd | generate systemd unit file
+    - name: Podman generate systemd | generate systemd unit file for {{ target }}
       containers.podman.podman_generate_systemd:
         name: "{{ target }}"
         dest: "{{ _systemd_service_files_dir }}"
@@ -24,12 +26,24 @@
     #     msg: "{{ (_podman_generate_systemd_result.systemd_units | dict2items | list | first).key }}"
     # - pause:
 
-    - name: Podman generate systemd | enable systemd service
+    - name: Podman generate systemd | enable systemd service for {{ 'pod-' + target if _pod_info.pods | length > 0 else 'container-' + target }}
       environment:
         XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"
-      ansible.builtin.systemd:
+      ansible.builtin.systemd_service:
         name: "{{ 'pod-' + target if _pod_info.pods | length > 0 else 'container-' + target }}"
         daemon_reload: true
         enabled: true
+        force: false
         scope: "{{ _systemd_scope }}"
-        state: started
+      when:
+        - _podman_generate_systemd_result.changed | bool # noqa: no-handler
+
+    - name: Podman generate systemd | start/restart systemd service for {{ 'pod-' + target if _pod_info.pods | length > 0 else 'container-' + target }}
+      environment:
+        XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"
+      ansible.builtin.systemd_service:
+        name: "{{ 'pod-' + target if _pod_info.pods | length > 0 else 'container-' + target }}"
+        # daemon_reload: true
+        # enabled: true
+        scope: "{{ _systemd_scope }}"
+        state: "{{ 'restarted' if _podman_generate_systemd_result.changed | bool or _pod_info.pods[0].State != 'Running' else 'started' }}"
