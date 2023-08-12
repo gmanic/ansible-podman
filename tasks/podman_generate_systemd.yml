@@ -15,6 +15,21 @@
     #     msg: "{{ _pod_info.pods[0].State }}"
     # - pause:
 
+    - name: Podman generate systemd | gather info about the container {{ target }}
+      containers.podman.podman_container_info:
+        name: "{{ target }}"
+      register: _container_info
+      when:
+        - _pod_info.pods | length == 0
+    # - debug: var=_container_info
+    # - pause:
+
+    - name: Podman generate systemd | generate _target_state from _pod_info or _container_info
+      ansible.builtin.set_fact:
+        _target_state: "{{ _pod_info.pods[0].State | lower if _pod_info.pods | length > 0 else _container_info.containers[0].State.Status | lower }}"
+    # - debug: var=_target_state
+    # - pause:
+
     - name: Podman generate systemd | generate systemd unit file for {{ target }}
       containers.podman.podman_generate_systemd:
         name: "{{ target }}"
@@ -46,4 +61,4 @@
         # daemon_reload: true
         # enabled: true
         scope: "{{ _systemd_scope }}"
-        state: "{{ 'restarted' if _podman_generate_systemd_result.changed | bool or _pod_info.pods[0].State != 'Running' else 'started' }}"
+        state: "{{ 'restarted' if _podman_generate_systemd_result.changed | bool or _target_state != 'running' else 'started' }}"

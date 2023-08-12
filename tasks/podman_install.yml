@@ -1,5 +1,7 @@
 ---
 
+# net.core.rmem_max = 2500000
+
 - name: Install podman
   ansible.builtin.package:
     name: "{{ podman_packages }}"
@@ -60,12 +62,23 @@
     owner: "{{ podman_user }}"
     group: "{{ podman_group }}"
     mode: '0700'
+  register: _container_dir
 
 - name: Substitute file contexts for path podman .local/share/containers with /var/lib/containers
   community.general.sefcontext:
     target: "{{ podman_user_home + '/.local/share/containers' }}"
     substitute: /var/lib/containers
     state: present
+  register: _container_dir_substitute
+
+- name: Run restore context for .local/share/containers with /var/lib/containers to reload selinux
+  ansible.builtin.command:
+    cmd: restorecon -F -R -v {{ podman_user_home + '/.local/share/containers' }}
+  when: # noqa: no-handler
+    - _container_dir_substitute.changed | bool or _container_dir.changed | bool
+    - ansible_selinux and ansible_selinux.status == "enabled"
+  register: _result
+  changed_when: _result.rc != 0
 
 - name: Set selinux policy for podman user home
   community.general.sefcontext:
@@ -212,6 +225,19 @@
 #     path: /etc/subgid
 #     line: "{{ podman_user }}:{{ podman_subgid_range }}"
 #     create: true
+
+- name: "set kernel parameters"
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_set: true
+    state: present
+    reload: true
+    sysctl_file: /etc/sysctl.d/podman.conf
+  loop:
+    - {name: "net.ipv4.ip_unprivileged_port_start", value: "80"}
+    - {name: "net.core.rmem_max", value: "2500000"}
+    - {name: "net.core.wmem_max", value: "2500000"}
 
 - name: Podman network
   containers.podman.podman_network:
