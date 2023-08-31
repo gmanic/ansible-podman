@@ -226,7 +226,7 @@
 #     line: "{{ podman_user }}:{{ podman_subgid_range }}"
 #     create: true
 
-- name: "set kernel parameters"
+- name: Set kernel parameters
   ansible.posix.sysctl:
     name: "{{ item.name }}"
     value: "{{ item.value }}"
@@ -235,7 +235,6 @@
     reload: true
     sysctl_file: /etc/sysctl.d/podman.conf
   loop:
-    - {name: "net.ipv4.ip_unprivileged_port_start", value: "80"}
     - {name: "net.core.rmem_max", value: "2500000"}
     - {name: "net.core.wmem_max", value: "2500000"}
 

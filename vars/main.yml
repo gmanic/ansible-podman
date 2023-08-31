@@ -1,6 +1,6 @@
 ---
 
-role_operations:
+podman_operations:
   - podman_generate_systemd
   - podman_init_vars
   - podman_install

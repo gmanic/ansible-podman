@@ -7,6 +7,7 @@
   register: _container_run_as_uid
   check_mode: false
   changed_when: false
+  tags: always
 
 - name: Podman | podman_init_vars | set facts depending on podman_rootless
   ansible.builtin.set_fact:
@@ -21,3 +22,4 @@
         if podman_rootless | bool else '/etc/systemd/system/' }}"
     _xdg_runtime_dir: "/run/user/{{ _container_run_as_uid.stdout }}"
   changed_when: false
+  tags: always

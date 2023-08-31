@@ -1,8 +1,8 @@
 ---
 
-- name: Run tasks from {{ role_operation + '.yml' }}
+- name: Run tasks from {{ podman_operation + '.yml' }}
   ansible.builtin.include_tasks:
-    file: "{{ role_operation }}.yml"
+    file: "{{ podman_operation }}.yml"
   when:
-    - role_operation in role_operations
+    - podman_operation in podman_operations
   tags: always
