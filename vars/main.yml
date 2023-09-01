@@ -5,4 +5,3 @@ podman_operations:
   - podman_init_vars
   - podman_install
   - pod_create
-  - pod_generate_systemd
