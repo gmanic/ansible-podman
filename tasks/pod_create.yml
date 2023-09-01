@@ -40,6 +40,6 @@
         #     - podman_generate_systemd
       vars:
         target: "{{ pod_name }}"
+      # tags: always
       when:
         - _pod_info.pods | length == 0
-      # tags: always

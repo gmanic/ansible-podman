@@ -51,7 +51,7 @@
         force: false
         scope: "{{ _systemd_scope }}"
       when:
-        - _podman_generate_systemd_result.changed | bool # noqa: no-handler
+        - _podman_generate_systemd_result.changed | bool  # noqa: no-handler
 
     - name: Podman generate systemd | start/restart systemd service for {{ 'pod-' + target if _pod_info.pods | length > 0 else 'container-' + target }}
       environment:

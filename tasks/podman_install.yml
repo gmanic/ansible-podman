@@ -74,7 +74,7 @@
 - name: Run restore context for .local/share/containers with /var/lib/containers to reload selinux
   ansible.builtin.command:
     cmd: restorecon -F -R -v {{ podman_user_home + '/.local/share/containers' }}
-  when: # noqa: no-handler
+  when:  # noqa: no-handler
     - _container_dir_substitute.changed | bool or _container_dir.changed | bool
     - ansible_selinux and ansible_selinux.status == "enabled"
   register: _result
@@ -88,7 +88,7 @@
     state: "{{ item.state }}"
   register: filecontext
   with_items:
-    - { target: '{{ container_storage_dir_base + "/" + podman_user }}(/.+)?', setype: 'user_home_dir_t', state: 'present' }
+    - {target: '{{ container_storage_dir_base + "/" + podman_user }}(/.+)?', setype: 'user_home_dir_t', state: 'present'}
   when: ansible_selinux and ansible_selinux.status == "enabled"
 
 # - ansible.builtin.debug:
@@ -98,8 +98,8 @@
   ansible.builtin.command:
     cmd: restorecon -F -R -v {{ item.target }}
   with_items:
-    - { index: 0, target: '{{ container_storage_dir_base + "/" + podman_user }}' }
-  when: # noqa: no-handler
+    - {index: 0, target: '{{ container_storage_dir_base + "/" + podman_user }}'}
+  when:  # noqa: no-handler
     - filecontext.results[item.index] is changed
     - ansible_selinux and ansible_selinux.status == "enabled"
   register: _result
@@ -196,7 +196,7 @@
     - {section: 'storage', option: 'driver', value: '"overlay"', state: 'present'}
     - {section: 'storage.options.overlay', option: 'mount_program', value: '"/usr/bin/fuse-overlayfs"', state: 'absent'}
     # - {section: 'storage.options.overlay', option: 'mount_program', value: '"/usr/bin/fuse-overlayfs"',
-      #  state: "{{ 'present' if podman_rootless | bool else 'absent' }}"}
+    #   state: "{{ 'present' if podman_rootless | bool else 'absent' }}"}
 
 - name: Configure podman storage rootless
   community.general.ini_file:
