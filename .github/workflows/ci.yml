@@ -5,12 +5,13 @@ name: CI
   push:
     branches:
       - main
+      - master
   schedule:
     - cron: "0 4 * * 5"
 
 defaults:
   run:
-    working-directory: 'sleif.openldap_container'
+    working-directory: 'sleif.ws'
 
 jobs:
 
@@ -21,7 +22,7 @@ jobs:
       - name: Check out the codebase.
         uses: actions/checkout@v2
         with:
-          path: 'sleif.openldap_container'
+          path: 'sleif.ws'
 
       - name: Set up Python 3.
         uses: actions/setup-python@v2
