@@ -4,7 +4,7 @@
   become: "{{ podman_rootless | d(true) | bool }}"
   become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
   tags:
-    - pod_create
+    - podman_pod_create
   when:
     - pod_name is defined
     - pod_name | length > 0
@@ -43,3 +43,8 @@
       # tags: always
       when:
         - _pod_info.pods | length == 0
+
+    - name: Pod Create | Gather info about the pod
+      containers.podman.podman_pod_info:
+        name: "{{ pod_name }}"
+      register: pod_info_result

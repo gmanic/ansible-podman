@@ -19,6 +19,7 @@ podman_packages:
   - podman-plugins
   - shadow-utils
   - slirp4netns
+  - passt
 
 podman_networks:
   podman_network_root:

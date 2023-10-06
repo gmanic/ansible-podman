@@ -9,7 +9,7 @@ podman_operations:
   - podman_generate_systemd
   - podman_init_vars
   - podman_install
-  - pod_create
+  - podman_pod_create
 ```
 
 - podman_install: installs Podman and prepares rootfull and rootless operations
@@ -21,7 +21,7 @@ podman_operations:
   - _systemd_service_files_dir
   - _xdg_runtime_dir
 - podman_generate_systemd: provides systemd unit file management; to ensure that Podman containers will work smoothly with systemd, it is required to just create `state: created` the containers with `containers.podman.podman_container` and call `podman_generate_systemd` after the pod creation
-- pod_create: creates a Podman pod to be used from other roles
+- podman_pod_create: creates a Podman pod to be used from other roles
 
 ## Requirements
 
@@ -87,14 +87,14 @@ None
   - Create a Podman pod:
 
   ```yaml
-  - name: Include role sleif.podman podman_operation pod_create
+  - name: Include role sleif.podman podman_operation podman_pod_create
     ansible.builtin.include_role:
       name: sleif.podman
       apply:
         tags:
           - podman_pod_create
     vars:
-      podman_operation: pod_create
+      podman_operation: podman_pod_create
     tags: always
   ```
 
@@ -109,7 +109,7 @@ None
           - podman_generate_systemd
     vars:
       podman_operation: podman_generate_systemd
-      target: "{{ pod_name if pod_name is defined and pod_name | length > 0 else container_name }}"
+      target: "{{ pod_name if pod_name | d('') is truthy else container_name }}"
     tags: always
   ```
 
