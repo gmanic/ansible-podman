@@ -7,6 +7,11 @@
     name: "{{ podman_packages }}"
     state: present
 
+- name: Setup bash completion
+  ansible.builtin.command: podman completion -f /etc/bash_completion.d/podman bash
+  args:
+    creates: /etc/bash_completion.d/podman
+
 # - name: Enable podman.sock
 #   ansible.builtin.service:
 #     name: podman.socket

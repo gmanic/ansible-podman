@@ -14,6 +14,7 @@ podman_user_home: "{{ container_storage_dir_base + '/' + podman_user }}"
 
 podman_packages:
   - aardvark-dns
+  - bash-completion
   - fuse-overlayfs
   - podman
   - podman-plugins
