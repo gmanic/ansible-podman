@@ -21,5 +21,13 @@
     _systemd_service_files_dir: "{{ container_storage_dir_base_local + '/' + podman_user + '/.config/systemd/user/'
         if podman_rootless | bool else '/etc/systemd/system/' }}"
     _xdg_runtime_dir: "/run/user/{{ _container_run_as_uid.stdout }}"
+    # __podman_xdg_runtime_dir: >-
+    #   /run/user/{{ ansible_facts["getent_passwd"][__podman_user][1] }}
+    # __podman_user_home_dir: "{{
+    #   ansible_facts['getent_passwd'][__podman_user][4] }}"
+    # __podman_systemd_scope: "{{ __podman_systemd_unit_scope
+    #   if __podman_systemd_unit_scope
+    #   and __podman_systemd_unit_scope | length > 0
+    #   else __podman_rootless | ternary('user', 'system') }}"
   changed_when: false
   tags: always

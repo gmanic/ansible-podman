@@ -8,7 +8,7 @@ podman_rootless: true
 # podman_group: "{{ 'podman' if podman_rootless | bool else 'root' }}"
 podman_user: podman
 podman_group: podman
-podman_user_home: "{{ container_storage_dir_base + '/' + podman_user }}"
+podman_user_home: "{{ container_storage_dir_base_local + '/' + podman_user }}"
 # podman_subuid_range: "300000:65536"
 # podman_subgid_range: "300000:65536"
 

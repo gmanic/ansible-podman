@@ -1,5 +1,12 @@
 ---
 
+- name: Include podman_init_vars.yml from sleif.podman
+  ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files: sleif.podman/tasks/includes/podman_init_vars.yml
+      paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
+
 - name: Pod create block
   become: "{{ podman_rootless | d(true) | bool }}"
   become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
