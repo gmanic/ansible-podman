@@ -8,6 +8,9 @@ name: CI
     branches:
       - main
       - master
+    tags:
+      - '*'
+
 
 defaults:
   run:
