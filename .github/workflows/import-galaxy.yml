@@ -29,4 +29,4 @@ jobs:
         env:
           GALAXY_API_KEY: ${{ secrets.GALAXY_API_KEY }}
         run: |
-          ansible-galaxy role import --api-key "${GALAXY_API_KEY}" "${GITHUB_REPOSITORY%/*}" "${GITHUB_REPOSITORY#*/}"
+          ansible-galaxy role import -s https://galaxy.ansible.com/api/ --api-key "${GALAXY_API_KEY}" "${GITHUB_REPOSITORY%/*}" "${GITHUB_REPOSITORY#*/}"
