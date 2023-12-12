@@ -4,7 +4,7 @@ name: Import Galaxy Role
 on:
   push:
     tags:
-      - '*'
+      - 'asdad*'
 
 jobs:
   import_galaxy:
