@@ -294,4 +294,4 @@
     gateway: "{{ podman_networks.podman_network_rootless.podman_network_gateway }}"
     disable_dns: false
     ipv6: false
-    recreate: true
+    # recreate: true
