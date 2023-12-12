@@ -19,7 +19,7 @@ defaults:
 jobs:
 
   lint:
-    name: Lint
+    name: Lint and Ansible Galaxy import
     runs-on: ubuntu-latest
     steps:
       - name: Check out the codebase.
