@@ -191,6 +191,21 @@
     - "/etc/containers/containers.conf"
     - "{{ podman_user_home + '/.config/containers/containers.conf' }}"
 
+# TODO: workaround a current slirp4netns MTU related performance weakness (2023)
+- name: Configure podman rootless slirp4netns
+  community.general.ini_file:
+    path: "{{ podman_user_home + '/.config/containers/containers.conf' }}"
+    owner: "{{ podman_user }}"
+    group: "{{ podman_group }}"
+    mode: "0600"
+    section: "{{ item.section }}"
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+    state: "{{ item.state }}"
+    no_extra_spaces: false
+  loop:
+    - {section: 'engine', option: 'network_cmd_options', value: '["mtu=20000"]', state: 'present'}
+
 - name: Prepare /etc/containers/storage.conf
   ansible.builtin.copy:
     dest: "{{ item }}"
