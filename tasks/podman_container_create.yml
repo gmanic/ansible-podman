@@ -1,0 +1,100 @@
+---
+
+- name: Include podman_init_vars.yml from sleif.podman
+  ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files: sleif.podman/tasks/includes/podman_init_vars.yml
+      paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
+
+- name: Container create block
+  become: "{{ podman_rootless | d(true) | bool }}"
+  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
+  tags:
+    - podman_container_create
+  # when:
+  #   - pod_name is defined
+  #   - pod_name | length > 0
+  block:
+    - name: Create persistant container directories  # noqa: ignore-errors
+      become: "{{ podman_rootless | bool }}"
+      become_method: containers.podman.podman_unshare
+      become_user: "{{ podman_user if podman_rootless | bool else omit }}"
+      ansible.builtin.file:
+        path: "{{ item.host }}"
+        state: directory
+        mode: '0775'
+      loop: "{{ _container.volumes | d([]) }}"
+      ignore_errors: true
+
+    - name: Include role sleif.podman podman_operation podman_pod_create - creates a  pod if necessary
+      ansible.builtin.include_role:
+        name: sleif.podman
+        apply:
+          tags:
+            - podman_pod_create
+      vars:
+        podman_operation: podman_pod_create
+      tags: always
+
+    - name: Create Podman secrets
+      become: "{{ podman_rootless | bool }}"
+      become_user: "{{ podman_user if podman_rootless | bool else omit }}"
+      containers.podman.podman_secret:
+        state: present
+        name: "{{ item.name }}"
+        data: "{{ item.data }}"
+        skip_existing: true
+      loop: "{{ _container.secrets | d([]) }}"
+      no_log: true
+      tags: podman_secrets
+
+    - name: Pull container image {{ _container.image.name }}
+      become: "{{ podman_rootless | bool }}"
+      become_user: "{{ podman_user if podman_rootless | bool else omit }}"
+      containers.podman.podman_image:
+        name: "{{ _container.image.name }}"
+        tag: "{{ _container.image.tag }}"
+        force: true
+
+    - name: Set_fact _volumes to an empty list
+      ansible.builtin.set_fact:
+        _volumes: []
+    - name: Set_fact _volumes
+      ansible.builtin.set_fact:
+        _volumes: "{{ _volumes | d([]) + [item.host ~ ':' ~ item.target] }}"
+      loop: "{{ _container.volumes }}"
+
+    - name: Create container {{ _container.image.name }} as {{ _container.hostname }}
+      become: "{{ podman_rootless | d(true) | bool }}"
+      become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
+      containers.podman.podman_container:
+        name: "{{ _container.name }}"
+        hostname: "{{ _container.hostname }}"
+        image: "{{ _container.image.name }}:{{ _container.image.tag }}"
+        state: created
+        pod: "{{ pod_name | default(omit) }}"
+        restart_policy: always
+        recreate: "{{ podman_container_recreate | d(false) }}"
+        network: "{{ podman_network_name if pod_name | d('') is falsy else [] }}"
+        publish: "{{ _container.publish | default([]) }}"
+        volumes: "{{ _volumes }}"
+        capabilities: "{{ _container.capabilities | d([]) }}"
+        secrets: "{{ _container.secrets | d([]) | map(attribute='name') | list }}"
+        command: "{{ _container.command | d(omit) }}"
+        workdir: "{{ _container.workdir | d('/') }}"
+        env: "{{ _container.env | default(omit) }}"
+        timezone: "local"
+      register: _container_create_results
+    # - debug: var=_container_create_results
+
+    - name: Include role sleif.podman podman_operation podman_generate_systemd
+      ansible.builtin.include_role:
+        name: sleif.podman
+        apply:
+          tags:
+            - podman_generate_systemd
+      vars:
+        podman_operation: podman_generate_systemd
+        target: "{{ pod_name if pod_name | d('') is truthy else container_name }}"
+      tags: always

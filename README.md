@@ -113,6 +113,27 @@ None
     tags: always
   ```
 
+  - Create a complete container
+
+  ```yaml
+  - name: Include role sleif.podman podman_operation podman_create_container
+    ansible.builtin.include_role:
+      name: sleif.podman
+      apply:
+        tags:
+          - podman_create_container
+    vars:
+      podman_operation: podman_create_container
+      target: "{{ pod_name if pod_name | d('') is truthy else container_name }}"
+      container_name: 'foo'
+      hostname: 'foo-host'
+      volumes:
+        - {'host': '/srv/podman/container_data/{{ container_name }}/data', 'container:' '/data'}
+      secrets:
+        - {'name': 'webpassword', 'data': '{{ password }}'}
+    tags: always
+  ```
+
 ## License
 
 MIT
