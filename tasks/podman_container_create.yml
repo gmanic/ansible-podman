@@ -77,6 +77,7 @@
         restart_policy: always
         recreate: "{{ podman_container_recreate | d(false) }}"
         network: "{{ podman_network_name if pod_name | d('') is falsy else [] }}"
+        # network_aliases: "{{ _container.hostname }}"
         publish: "{{ _container.publish | default([]) }}"
         volumes: "{{ _volumes }}"
         capabilities: "{{ _container.capabilities | d([]) }}"
