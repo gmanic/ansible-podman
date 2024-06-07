@@ -72,12 +72,13 @@
         name: "{{ _container.name }}"
         hostname: "{{ _container.hostname }}"
         image: "{{ _container.image.name }}:{{ _container.image.tag }}"
-        state: created
+        state: quadlet
         pod: "{{ pod_name | default(omit) }}"
-        restart_policy: always
-        recreate: "{{ podman_container_recreate | d(false) }}"
+        # restart_policy: "no"
+        # recreate: "{{ podman_container_recreate | d(false) }}"
         network: "{{ podman_network_name if pod_name | d('') is falsy else [] }}"
         # network_aliases: "{{ _container.hostname }}"
+        # rm: false
         publish: "{{ _container.publish | default([]) }}"
         volumes: "{{ _volumes }}"
         capabilities: "{{ _container.capabilities | d([]) }}"
@@ -86,9 +87,17 @@
         workdir: "{{ _container.workdir | d('/') }}"
         env: "{{ _container.env | default(omit) }}"
         timezone: "local"
+        quadlet_options:
+          - "AutoUpdate=registry"
+          - |
+            [Service]
+            Restart=always
+            [Install]
+            WantedBy=default.target
+
       register: _container_create_results
     # - debug: var=_container_create_results
-
+    - pause:
     - name: Include role sleif.podman podman_operation podman_generate_systemd
       ansible.builtin.include_role:
         name: sleif.podman
