@@ -30,6 +30,32 @@
     # - debug: var=_target_state
     # - pause:
 
+    - name: Podman generate systemd | check_mode generate systemd unit file for {{ target }}
+      containers.podman.podman_generate_systemd:
+        name: "{{ target }}"
+        dest: "{{ _systemd_service_files_dir }}"
+        restart_policy: always
+        no_header: true
+        # start_timeout: 300
+        # stop_timeout: 300
+      register: _podman_generate_systemd_result_check
+      check_mode: true
+
+    - name: Podman generate systemd | stop systemd service for {{ 'pod-' + target if _pod_info.pods | length > 0 else 'container-' + target }}
+      environment:
+        XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"
+      ansible.builtin.systemd_service:
+        name: "{{ 'pod-' + target if _pod_info.pods | length > 0 else 'container-' + target }}"
+        # daemon_reload: true
+        # enabled: true
+        scope: "{{ _systemd_scope }}"
+        state: "stopped"
+      when:
+        - _target_state == 'running'
+        - _podman_generate_systemd_result_check.changed | bool  # noqa: no-handler
+    # - debug: var=_podman_generate_systemd_result_check
+    # - pause:
+
     - name: Podman generate systemd | generate systemd unit file for {{ target }}
       containers.podman.podman_generate_systemd:
         name: "{{ target }}"
