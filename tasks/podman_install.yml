@@ -9,10 +9,26 @@
 #       files: sleif.podman/tasks/includes/podman_init_vars.yml
 #       paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
 
-- name: Install podman
+- name: Block to get Podman 5.x on EL9
+  when:
+    - ansible_os_family == "RedHat"
+    - ansible_distribution_major_version == '9'
+  block:
+    - name: remove package gvisor-tap-vsock
+      ansible.builtin.package:
+        name: "gvisor-tap-vsock"
+        state: absent
+    # https://copr.fedorainfracloud.org/coprs/rhcontainerbot/podman-next/
+    - name: Activate podman copr on EL9 - required to get podman 5.x
+      community.general.copr:
+        state: enabled
+        name: rhcontainerbot/podman-next
+        chroot: epel-9-x86_64
+
+- name: Install and update podman
   ansible.builtin.package:
     name: "{{ podman_packages }}"
-    state: present
+    state: latest
 
 - name: Setup bash completion
   ansible.builtin.command: podman completion -f /etc/bash_completion.d/podman bash
@@ -186,7 +202,7 @@
     section: containers
     option: tz
     value: '"local"'
-    no_extra_spaces: true
+    no_extra_spaces: false
   loop:
     - "/etc/containers/containers.conf"
     - "{{ podman_user_home + '/.config/containers/containers.conf' }}"
@@ -197,7 +213,7 @@
     path: "{{ podman_user_home + '/.config/containers/containers.conf' }}"
     owner: "{{ podman_user }}"
     group: "{{ podman_group }}"
-    mode: "0600"
+    mode: "0644"
     section: "{{ item.section }}"
     option: "{{ item.option }}"
     value: "{{ item.value }}"
@@ -282,8 +298,8 @@
     reload: true
     sysctl_file: /etc/sysctl.d/podman.conf
   loop:
-    - {name: "net.core.rmem_max", value: "2500000"}
-    - {name: "net.core.wmem_max", value: "2500000"}
+    - {name: "net.core.rmem_max", value: "7500000"}
+    - {name: "net.core.wmem_max", value: "7500000"}
 
 - name: Podman network
   containers.podman.podman_network:
