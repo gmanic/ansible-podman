@@ -25,7 +25,7 @@
         name: rhcontainerbot/podman-next
         chroot: epel-9-x86_64
 
-- name: Install and update podman
+- name: Install and update podman  # noqa: package-latest
   ansible.builtin.package:
     name: "{{ podman_packages }}"
     state: latest
