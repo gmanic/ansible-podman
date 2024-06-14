@@ -2,13 +2,6 @@
 
 # net.core.rmem_max = 2500000
 
-# - name: Include podman_init_vars.yml from sleif.podman
-#   ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
-#   vars:
-#     params:
-#       files: sleif.podman/tasks/includes/podman_init_vars.yml
-#       paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
-
 - name: Block to get Podman 5.x on EL9
   when:
     - ansible_os_family == "RedHat"
@@ -301,7 +294,7 @@
     - {name: "net.core.rmem_max", value: "7500000"}
     - {name: "net.core.wmem_max", value: "7500000"}
 
-- name: Podman network
+- name: Podman network rootful
   containers.podman.podman_network:
     name: "{{ podman_networks.podman_network_root.podman_network_name }}"
     driver: 'bridge'
@@ -312,6 +305,15 @@
     disable_dns: false
     ipv6: false
     # recreate: true
+    state: quadlet
+  register: _quadlet_file_status
+
+- name: Start the systemd network unit rootful
+  ansible.builtin.systemd_service:
+    name: "{{ podman_networks.podman_network_root.podman_network_name ~ '-network' }}"
+    daemon_reload: true
+    scope: "system"
+    state: "started"
 
 - name: Podman network rootless
   become: true
@@ -326,3 +328,16 @@
     disable_dns: false
     ipv6: false
     # recreate: true
+    state: quadlet
+  register: _quadlet_file_status
+
+- name: Start the systemd network unit rootless
+  become: true
+  become_user: "{{ podman_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ '/run/user/' + _container_run_as_uid.stdout }}"
+  ansible.builtin.systemd_service:
+    name: "{{ podman_networks.podman_network_rootless.podman_network_name ~ '-network' }}"
+    daemon_reload: true
+    scope: "user"
+    state: "started"

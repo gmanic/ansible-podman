@@ -1,0 +1,33 @@
+---
+
+- name: Include podman_init_vars.yml from sleif.podman
+  ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files: sleif.podman/tasks/includes/podman_init_vars.yml
+      paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
+
+- name: Create quadlet file for and pull image
+  become: "{{ podman_rootless | d(true) | bool }}"
+  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
+  block:
+    - name: Create quadlet file for image {{ image_name ~ ':' ~ image_tag | d('latest') }}
+      containers.podman.podman_image:
+        name: "{{ image_name ~ ':' ~ image_tag }}"
+        tag: "{{ image_tag }}"
+        state: quadlet
+        quadlet_options:
+          - |
+            [Install]
+            WantedBy=default.target
+      register: _quadlet_file_status
+
+    - name: Start the systemd image unit
+      environment:
+        XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"
+      ansible.builtin.systemd_service:
+        name: "{{ image_name | basename ~ '-image' }}"
+        daemon_reload: true
+        # enabled: true
+        scope: "{{ _systemd_scope }}"
+        state: "started"

@@ -15,7 +15,11 @@ podman_user_home: "{{ container_storage_dir_base_local + '/' + podman_user }}"
 podman_packages:
   - aardvark-dns
   - bash-completion
+  - conmon
+  - container-selinux
+  - crun
   - fuse-overlayfs
+  - netavark
   - podman
   - podman-plugins
   - shadow-utils

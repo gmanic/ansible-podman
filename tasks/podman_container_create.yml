@@ -49,13 +49,26 @@
       no_log: true
       tags: podman_secrets
 
-    - name: Pull container image {{ _container.image.name }}
-      become: "{{ podman_rootless | bool }}"
-      become_user: "{{ podman_user if podman_rootless | bool else omit }}"
-      containers.podman.podman_image:
-        name: "{{ _container.image.name }}"
-        tag: "{{ _container.image.tag }}"
-        force: true
+    # - name: Pull container image {{ _container.image.name }}
+    #   become: "{{ podman_rootless | bool }}"
+    #   become_user: "{{ podman_user if podman_rootless | bool else omit }}"
+    #   containers.podman.podman_image:
+    #     name: "{{ _container.image.name }}"
+    #     tag: "{{ _container.image.tag }}"
+    #     force: true
+
+    - name: Include role sleif.podman podman_operation podman_pull_image
+      ansible.builtin.include_role:
+        name: sleif.podman
+        apply:
+          tags:
+            - podman_pull_image
+            # - podman_container_create
+      vars:
+        podman_operation: podman_pull_image
+        image_name: "{{ _container.image.name }}"
+        image_tag: "{{ _container.image.tag }}"
+      # tags: always
 
     - name: Set_fact _volumes to an empty list
       ansible.builtin.set_fact:
@@ -78,7 +91,7 @@
         # recreate: "{{ podman_container_recreate | d(false) }}"
         network: "{{ podman_network_name if pod_name | d('') is falsy else [] }}"
         # network_aliases: "{{ _container.hostname }}"
-        # rm: false
+        rm: false
         publish: "{{ _container.publish | default([]) }}"
         volumes: "{{ _volumes }}"
         capabilities: "{{ _container.capabilities | d([]) }}"
@@ -88,16 +101,17 @@
         env: "{{ _container.env | default(omit) }}"
         timezone: "local"
         quadlet_options:
-          - "AutoUpdate=registry"
+          - "AutoUpdate=local"
           - |
             [Service]
             Restart=always
+            TimeoutStartSec=900
             [Install]
             WantedBy=default.target
+      register: _quadlet_file_status
+    # - debug: var=_quadlet_file_status
+    # - pause:
 
-      register: _container_create_results
-    # - debug: var=_container_create_results
-    - pause:
     - name: Include role sleif.podman podman_operation podman_generate_systemd
       ansible.builtin.include_role:
         name: sleif.podman
@@ -107,4 +121,5 @@
       vars:
         podman_operation: podman_generate_systemd
         target: "{{ pod_name if pod_name | d('') is truthy else container_name }}"
-      tags: always
+        quadlet: "{{ _quadlet_file_status }}"
+      # tags: always

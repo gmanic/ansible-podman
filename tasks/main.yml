@@ -3,6 +3,9 @@
 - name: Run tasks from {{ podman_operation + '.yml' }}
   ansible.builtin.include_tasks:
     file: "{{ podman_operation }}.yml"
+    apply:
+      tags:
+        - "{{ podman_operation }}"
   when:
     - podman_operation in podman_operations
   tags: always
