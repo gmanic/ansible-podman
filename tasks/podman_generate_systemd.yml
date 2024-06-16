@@ -10,7 +10,7 @@
       containers.podman.podman_pod_info:
         name: "{{ target }}"
       register: _pod_info
-    - debug: var=_pod_info
+    # - debug: var=_pod_info
     # - debug:
     #     msg: "{{ _pod_info.pods[0].State }}"
     # - pause:
@@ -18,7 +18,7 @@
     - name: Podman generate systemd | check for pod description for {{ target }}
       ansible.builtin.shell: |
         set -o pipefail
-        /usr/lib/systemd/system-generators/podman-system-generator {{
+        /usr/lib/systemd/system-generators/podman-system-generator 2> /dev/null {{
         '-user' if podman_rootless | d(true) | bool else '' }} -dryrun | grep -q {{ target ~ '-pod.service' }}
       register: _pod_quadlet_file
       when:
@@ -33,14 +33,14 @@
       when:
         - _pod_info.pods | length == 0
         - _pod_quadlet_file.rc | d(1) != 0
-    - debug: var=_container_info
+    # - debug: var=_container_info
     # - pause:
 
     - name: Podman generate systemd | generate _target_state from _pod_info or _container_info
       ansible.builtin.set_fact:
         _target_state: "{{ _pod_info.pods[0].State | lower if _pod_info.pods | length > 0 else 'defined' if _pod_quadlet_file.rc | d(1) == 0
           else _container_info.containers[0].State.Status | lower if _container_info.containers | length > 0 else 'unknown' }}"
-    - debug: var=_target_state
+    # - debug: var=_target_state
     # - pause:
 
     - name: Podman generate systemd | start/restart systemd service for {{ target ~ '-pod' if _pod_info.pods | length > 0 else target }}

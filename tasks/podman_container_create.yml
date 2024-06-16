@@ -23,8 +23,10 @@
       ansible.builtin.file:
         path: "{{ item.host }}"
         state: directory
-        mode: '0775'
+        mode: "{{ item.mode | d('0775') }}"
       loop: "{{ _container.volumes | d([]) }}"
+      when:
+        - item.state | d('directory') == 'directory'
       ignore_errors: true
 
     - name: Include role sleif.podman podman_operation podman_pod_create - creates a  pod if necessary
@@ -83,28 +85,31 @@
       become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
       containers.podman.podman_container:
         name: "{{ _container.name }}"
-        hostname: "{{ _container.hostname }}"
+        hostname: "{{ _container.hostname | d(_container.name) }}"
         image: "{{ _container.image.name }}:{{ _container.image.tag }}"
+        command: "{{ _container.command | default(omit) }}"
         state: quadlet
         pod: "{{ pod_name | default(omit) }}"
         # restart_policy: "no"
         # recreate: "{{ podman_container_recreate | d(false) }}"
-        network: "{{ podman_network_name if pod_name | d('') is falsy else [] }}"
+        memory: "{{ _container.memory | default(omit) }}"
+        network: "{{ _container.network | d(podman_network_name if pod_name | d('') is falsy else []) }}"
         # network_aliases: "{{ _container.hostname }}"
         rm: false
         publish: "{{ _container.publish | default([]) }}"
         volumes: "{{ _volumes }}"
+        volumes_from: "{{ _container.volumes_from | d([]) }}"
         capabilities: "{{ _container.capabilities | d([]) }}"
         secrets: "{{ _container.secrets | d([]) | map(attribute='name') | list }}"
-        command: "{{ _container.command | d(omit) }}"
         workdir: "{{ _container.workdir | d('/') }}"
         env: "{{ _container.env | default(omit) }}"
-        timezone: "local"
+        timezone: "{{ _container.timezone | default('local') }}"
         quadlet_options:
           - "AutoUpdate=local"
           - |
             [Service]
             Restart=always
+            ExecStartPost={{ _container.service.execstartpost | d('') }}
             TimeoutStartSec=900
             [Install]
             WantedBy=default.target
