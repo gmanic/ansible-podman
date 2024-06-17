@@ -1,5 +1,9 @@
 ---
 
+- name: reset _podman_generate_systemd_changed
+  ansible.builtin.set_fact:
+    _podman_generate_systemd_changed: false
+
 - name: Podman generate systemd become block
   become: "{{ podman_rootless | d(true) | bool }}"
   become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
@@ -17,7 +21,7 @@
 
     - name: Podman generate systemd | check for pod description for {{ target }}
       ansible.builtin.shell: |
-        set -o pipefail
+        set +o pipefail
         /usr/lib/systemd/system-generators/podman-system-generator 2> /dev/null {{
         '-user' if podman_rootless | d(true) | bool else '' }} -dryrun | grep -q {{ target ~ '-pod.service' }}
       register: _pod_quadlet_file
@@ -52,3 +56,7 @@
         # enabled: true
         scope: "{{ _systemd_scope }}"
         state: "{{ 'restarted' if quadlet.changed | bool or _target_state != 'running' else 'started' }}"
+
+    - name: evaluate _podman_generate_systemd_changed for {{ target }}
+      ansible.builtin.set_fact:
+        _podman_generate_systemd_changed: "{{ true if _podman_generate_systemd_changed | d(false) | bool or _quadlet_file_status.changed | bool else false }}"

@@ -2,7 +2,7 @@
 
 - name: Podman | podman_init_vars | find uid of user
   become: "{{ podman_rootless | d(true) | bool }}"
-  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
+  become_user: "{{ podman_user | d('podman') if podman_rootless | d(true) | bool else omit }}"
   ansible.builtin.command: "id -u"
   register: _container_run_as_uid
   check_mode: false
@@ -11,14 +11,14 @@
 
 - name: Podman | podman_init_vars | set facts depending on podman_rootless
   ansible.builtin.set_fact:
-    _container_storage_dir_base_local: "{{ container_storage_dir_base_local + '/' + podman_user + '/container_data'
+    _container_storage_dir_base_local: "{{ container_storage_dir_base_local + '/' + podman_user | d('podman') + '/container_data'
         if podman_rootless | bool else container_storage_dir_base_local }}"
-    _container_storage_dir_base: "{{ container_storage_dir_base + '/' + podman_user + '/container_data'
+    _container_storage_dir_base: "{{ container_storage_dir_base + '/' + podman_user | d('podman') + '/container_data'
         if podman_rootless | bool else container_storage_dir_base }}"
-    _group: "{{ podman_group if podman_rootless | bool else 'root' }}"
-    _owner: "{{ podman_user if podman_rootless | bool else 'root' }}"
+    _group: "{{ podman_group | d('podman') if podman_rootless | bool else 'root' }}"
+    _owner: "{{ podman_user | d('podman') if podman_rootless | bool else 'root' }}"
     _systemd_scope: "{{ 'user' if podman_rootless | bool else 'system' }}"
-    _systemd_service_files_dir: "{{ container_storage_dir_base_local + '/' + podman_user + '/.config/systemd/user/'
+    _systemd_service_files_dir: "{{ container_storage_dir_base_local + '/' + podman_user | d('podman') + '/.config/systemd/user/'
         if podman_rootless | bool else '/etc/systemd/system/' }}"
     _xdg_runtime_dir: "/run/user/{{ _container_run_as_uid.stdout }}"
     # __podman_xdg_runtime_dir: >-
