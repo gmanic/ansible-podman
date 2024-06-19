@@ -302,7 +302,7 @@
     # ip_range: "{{ podman_networks.podman_network_root.podman_network_iprange }}"
     subnet: "{{ podman_networks.podman_network_root.podman_network_subnet }}"
     gateway: "{{ podman_networks.podman_network_root.podman_network_gateway }}"
-    disable_dns: false
+    disable_dns: "{{ podman_networks.podman_network_root.podman_network_disabledns | d(false) }}"
     ipv6: false
     # recreate: true
     state: quadlet
