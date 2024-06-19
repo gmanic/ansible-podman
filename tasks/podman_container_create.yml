@@ -98,27 +98,20 @@
       become: "{{ podman_rootless | d(true) | bool }}"
       become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
       containers.podman.podman_container:
-        name: "{{ _container.name }}"
+        capabilities: "{{ _container.capabilities | d([]) }}"
+        command: "{{ _container.command | default(omit) }}"
+        dns_servers: "{{ _container.name | default(omit) }}"
+        env: "{{ _container.env | default(omit) }}"
         hostname: "{{ _container.hostname | d(_container.name) if not _container.pod | d('') is truthy else omit }}"
         image: "{{ _container.image.name }}:{{ _container.image.tag }}"
-        command: "{{ _container.command | default(omit) }}"
-        state: quadlet
-        pod: "{{ _pod_file_name | default(omit) }}"
-        # restart_policy: "no"
-        # recreate: "{{ podman_container_recreate | d(false) }}"
         memory: "{{ _container.memory | default(omit) }}"
-        network: "{{ _container.network | d(podman_network_name if pod_name | d('') is falsy else []) }}"
+        name: "{{ _container.name }}"
         # network_aliases: "{{ _container.hostname }}"
-        rm: false
+        network: "{{ _container.network | d(podman_network_name if pod_name | d('') is falsy else []) }}"
+        pod: "{{ _pod_file_name | default(omit) }}"
         publish: "{{ _container.publish | default([]) }}"
-        volumes: "{{ _volumes }}"
-        volumes_from: "{{ _container.volumes_from | d([]) }}"
-        capabilities: "{{ _container.capabilities | d([]) }}"
-        secrets: "{{ _container.secrets | d([]) | map(attribute='name') | list }}"
-        workdir: "{{ _container.workdir | d(omit) }}"
-        env: "{{ _container.env | default(omit) }}"
-        timezone: "{{ _container.timezone | default('local') }}"
-        tmpfs: "{{ _container.tmpfs | default(omit) }}"
+        # recreate: "{{ podman_container_recreate | d(false) }}"
+        # restart_policy: "no"
         quadlet_options:
           - "AutoUpdate=local"
           - |
@@ -128,6 +121,14 @@
             TimeoutStartSec=900
             [Install]
             WantedBy=default.target
+        rm: false
+        secrets: "{{ _container.secrets | d([]) | map(attribute='name') | list }}"
+        state: quadlet
+        timezone: "{{ _container.timezone | default('local') }}"
+        tmpfs: "{{ _container.tmpfs | default(omit) }}"
+        volumes_from: "{{ _container.volumes_from | d([]) }}"
+        volumes: "{{ _volumes }}"
+        workdir: "{{ _container.workdir | d(omit) }}"
       register: _quadlet_file_status
     # - debug: var=_quadlet_file_status
     # - pause:
