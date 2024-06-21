@@ -23,14 +23,34 @@
     # - debug: var=_pod_info
     # - pause:
 
+    - name: Create persistant container directories  # noqa: ignore-errors
+      become: "{{ podman_rootless | bool }}"
+      become_method: containers.podman.podman_unshare
+      become_user: "{{ podman_user if podman_rootless | bool else omit }}"
+      ansible.builtin.file:
+        path: "{{ item.host }}"
+        state: directory
+        mode: "{{ item.mode | d('0775') }}"
+      # ignore_errors: true
+      loop: "{{ pod_volumes | d([]) }}"
+      when:
+        - item.state | d('directory') == 'directory'
+
+    - name: Reset _volumes to an empty list
+      ansible.builtin.set_fact:
+        _pod_volumes: []
+    - name: Set_fact _volumes
+      ansible.builtin.set_fact:
+        _pod_volumes: "{{ _pod_volumes | d([]) + [item.host ~ ':' ~ item.target] }}"
+      loop: "{{ pod_volumes | default([]) }}"
+
     # https://docs.podman.io/en/latest/markdown/podman-systemd.unit.5.html
     - name: Pod create | Create the pod
       containers.podman.podman_pod:
-        name: "{{ pod_name }}"
-        publish: "{{ pod_published_ports | default(omit) }}"
         hostname: "{{ pod_name }}"
+        name: "{{ pod_name }}"
         network: "{{ podman_network_name }}"
-        state: quadlet
+        publish: "{{ pod_published_ports | default(omit) }}"
         quadlet_options:
           - |
             [Service]
@@ -39,6 +59,8 @@
             TimeoutStopSec=300
             [Install]
             WantedBy=default.target
+        state: quadlet
+        volumes: "{{ _pod_volumes }}"
       register: _quadlet_file_status
     # - debug: var=_quadlet_file_status
     # - pause:

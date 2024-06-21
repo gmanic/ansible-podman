@@ -20,7 +20,7 @@
   #   - pod_name is defined
   #   - pod_name | length > 0
   block:
-    - name: Create persistant container directories  # noqa: ignore-errors
+    - name: Create persistant container directories for {{ _container.name }} # noqa: ignore-errors
       become: "{{ podman_rootless | bool }}"
       become_method: containers.podman.podman_unshare
       become_user: "{{ podman_user if podman_rootless | bool else omit }}"
@@ -43,7 +43,7 @@
         podman_operation: podman_pod_create
       tags: always
 
-    - name: Create Podman secrets
+    - name: Create Podman secrets for {{ _container.name }}
       become: "{{ podman_rootless | bool }}"
       become_user: "{{ podman_user if podman_rootless | bool else omit }}"
       containers.podman.podman_secret:
@@ -63,7 +63,7 @@
     #     tag: "{{ _container.image.tag }}"
     #     force: true
 
-    - name: Include role sleif.podman podman_operation podman_pull_image
+    - name: Include role sleif.podman podman_operation podman_pull_image for {{ _container.name }}
       ansible.builtin.include_role:
         name: sleif.podman
         apply:
@@ -94,7 +94,7 @@
         _volumes: "{{ _volumes | d([]) + [item.host ~ ':' ~ item.target] }}"
       loop: "{{ _container.volumes | default([]) }}"
 
-    - name: Create container {{ _container.image.name }} as {{ _container.hostname }}
+    - name: Create container {{ _container.image.name }} as {{ _container.hostname | d(_container.name) }}
       become: "{{ podman_rootless | d(true) | bool }}"
       become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
       containers.podman.podman_container:
