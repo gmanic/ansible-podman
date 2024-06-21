@@ -13,8 +13,7 @@
   tags:
     - podman_pod_create
   when:
-    - pod_name is defined
-    - pod_name | length > 0
+    - pod_name | d('') is truthy
   block:
     - name: Pod Create | Gather info about the pod
       containers.podman.podman_pod_info:
