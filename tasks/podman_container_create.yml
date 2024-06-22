@@ -20,7 +20,7 @@
   #   - pod_name is defined
   #   - pod_name | length > 0
   block:
-    - name: Create persistant container directories for {{ _container.name }} # noqa: ignore-errors
+    - name: Create persistant container directories for {{ _container.name }}  # noqa: ignore-errors
       become: "{{ podman_rootless | bool }}"
       become_method: containers.podman.podman_unshare
       become_user: "{{ podman_user if podman_rootless | bool else omit }}"
@@ -81,10 +81,7 @@
 
     - name: Set_fact _pod_file_name
       ansible.builtin.set_fact:
-        _pod_file_name: "{{ _container.pod ~ '.pod' }}"
-      when:
-        - _container.pod is defined
-        - _container.pod | length > 0
+        _pod_file_name: "{{ _container.pod | d('') ~ '.pod' if _container.pod | d('') is truthy else '' }}"
 
     - name: Set_fact _volumes to an empty list
       ansible.builtin.set_fact:
@@ -108,7 +105,7 @@
         name: "{{ _container.name }}"
         # network_aliases: "{{ _container.hostname }}"
         network: "{{ _container.network | d(podman_network_name if pod_name | d('') is falsy else []) }}"
-        pod: "{{ _pod_file_name | default(omit) }}"
+        pod: "{{ _pod_file_name if _pod_file_name is truthy else omit }}"
         publish: "{{ _container.publish | default([]) }}"
         # recreate: "{{ podman_container_recreate | d(false) }}"
         # restart_policy: "no"
