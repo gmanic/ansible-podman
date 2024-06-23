@@ -14,13 +14,14 @@
     # https://copr.fedorainfracloud.org/coprs/rhcontainerbot/podman-next/
     - name: Activate podman copr on EL9 - required to get podman 5.x
       community.general.copr:
-        state: enabled
+        state: disabled
         name: rhcontainerbot/podman-next
         chroot: epel-9-x86_64
 
 - name: Install and update podman  # noqa: package-latest
-  ansible.builtin.package:
+  ansible.builtin.dnf:
     name: "{{ podman_packages }}"
+    enablerepo: "copr:copr.fedorainfracloud.org:rhcontainerbot:podman-next"
     state: latest
 
 - name: Setup bash completion
