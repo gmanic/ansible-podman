@@ -26,6 +26,21 @@ podman_packages:
   - slirp4netns
   - passt
 
+# podman_packages with copr
+# podman_packages:
+#   - aardvark-dns >= 1.11
+#   - bash-completion
+#   - conmon >= 2.1.10
+#   - container-selinux >= 2.232.0
+#   - crun >= 1.15
+#   - fuse-overlayfs
+#   - netavark >= 1.11.0
+#   - podman >= 5.0
+#   - podman-plugins >= 5.0.0
+#   - shadow-utils
+#   - slirp4netns
+#   - passt
+
 podman_networks:
   podman_network_root:
     podman_network_name: 'podman_custom_network'
