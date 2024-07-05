@@ -2,7 +2,7 @@
 
 podman_operations:
   - podman_container_create
-  - podman_generate_systemd
+  - podman_systemd_restart_pod_or_container
   - podman_init_vars
   - podman_install
   - podman_pod_create

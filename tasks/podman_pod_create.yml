@@ -64,9 +64,9 @@
     # - debug: var=_quadlet_file_status
     # - pause:
 
-    - name: Include tasks from podman_generate_systemd
+    - name: Include tasks from podman_systemd_restart_pod_or_container
       ansible.builtin.include_tasks:
-        file: podman_generate_systemd.yml
+        file: podman_systemd_restart_pod_or_container.yml
       vars:
         target: "{{ pod_name }}"
         quadlet: "{{ _quadlet_file_status }}"

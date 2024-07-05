@@ -1,16 +1,12 @@
 ---
 
-- name: reset _podman_generate_systemd_changed
-  ansible.builtin.set_fact:
-    _podman_generate_systemd_changed: false
-
-- name: Podman generate systemd become block
+- name: Podman systemd restart pod or container become block
   become: "{{ podman_rootless | d(true) | bool }}"
   become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
   tags:
-    - podman_generate_systemd
+    - podman_systemd_restart_pod_or_container
   block:
-    - name: Podman generate systemd | gather info about the pod {{ target }}
+    - name: Podman systemd restart pod or container | gather info about the pod {{ target }}
       containers.podman.podman_pod_info:
         name: "{{ target }}"
       register: _pod_info
@@ -19,7 +15,7 @@
     #     msg: "{{ _pod_info.pods[0].State }}"
     # - pause:
 
-    - name: Podman generate systemd | check for pod description for {{ target }}
+    - name: Podman systemd restart pod or container | check for pod description for {{ target }}
       ansible.builtin.shell: |
         set +o pipefail
         /usr/lib/systemd/system-generators/podman-system-generator 2> /dev/null {{
@@ -30,7 +26,7 @@
       changed_when: false
       ignore_errors: true
 
-    - name: Podman generate systemd | gather info about the container {{ target }}
+    - name: Podman systemd restart pod or container | gather info about the container {{ target }}
       containers.podman.podman_container_info:
         name: "{{ target }}"
       register: _container_info
@@ -40,14 +36,14 @@
     # - debug: var=_container_info
     # - pause:
 
-    - name: Podman generate systemd | generate _target_state from _pod_info or _container_info
+    - name: Podman systemd restart pod or container | generate _target_state from _pod_info or _container_info
       ansible.builtin.set_fact:
         _target_state: "{{ _pod_info.pods[0].State | lower if _pod_info.pods | length > 0 else 'defined' if _pod_quadlet_file.rc | d(1) == 0
           else _container_info.containers[0].State.Status | lower if _container_info.containers | length > 0 else 'unknown' }}"
     # - debug: var=_target_state
     # - pause:
 
-    - name: Podman generate systemd | start/restart systemd service for {{ target ~ '-pod' if _pod_info.pods | length > 0 else target }}
+    - name: Podman systemd restart pod or container | start/restart systemd service for {{ target ~ '-pod' if _pod_info.pods | length > 0 else target }}
       environment:
         XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"
       ansible.builtin.systemd_service:
@@ -55,8 +51,4 @@
         daemon_reload: true
         # enabled: true
         scope: "{{ _systemd_scope }}"
-        state: "{{ 'restarted' if quadlet.changed | bool or _target_state != 'running' else 'started' }}"
-
-    - name: evaluate _podman_generate_systemd_changed for {{ target }}
-      ansible.builtin.set_fact:
-        _podman_generate_systemd_changed: "{{ true if _podman_generate_systemd_changed | d(false) | bool or _quadlet_file_status.changed | bool else false }}"
+        state: "{{ 'restarted' if quadlet.changed | bool or _target_state != 'running' or _podman_container_create_changed | d(false) | bool else 'started' }}"

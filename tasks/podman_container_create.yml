@@ -55,14 +55,6 @@
       no_log: true
       tags: podman_secrets
 
-    # - name: Pull container image {{ _container.image.name }}
-    #   become: "{{ podman_rootless | bool }}"
-    #   become_user: "{{ podman_user if podman_rootless | bool else omit }}"
-    #   containers.podman.podman_image:
-    #     name: "{{ _container.image.name }}"
-    #     tag: "{{ _container.image.tag }}"
-    #     force: true
-
     - name: Include role sleif.podman podman_operation podman_pull_image for {{ _container.name }}
       ansible.builtin.include_role:
         name: sleif.podman
@@ -73,11 +65,12 @@
         podman_operation: podman_pull_image
         image_name: "{{ _container.image.name }}"
         image_tag: "{{ _container.image.tag }}"
-      register: _result
+        _result: {}
 
     - name: evaluate _podman_container_create_changed for {{ _container.name }}
       ansible.builtin.set_fact:
-        _podman_container_create_changed: "{{ true if _podman_container_create_changed | d(false) | bool or _result.changed | bool else false }}"
+        _podman_container_create_changed: "{{ true if _podman_container_create_changed | d(false) | bool
+          or _result.changed | bool or _quadlet_file_status.changed | bool else false }}"
 
     - name: Set_fact _pod_file_name
       ansible.builtin.set_fact:
@@ -134,18 +127,13 @@
       ansible.builtin.set_fact:
         _podman_container_create_changed: "{{ true if _podman_container_create_changed | d(false) | bool or _quadlet_file_status.changed | bool else false }}"
 
-    - name: Include role sleif.podman podman_operation podman_generate_systemd
+    - name: Include role sleif.podman podman_operation podman_systemd_restart_pod_or_container
       ansible.builtin.include_role:
         name: sleif.podman
         apply:
           tags:
-            - podman_generate_systemd
+            - podman_systemd_restart_pod_or_container
       vars:
-        podman_operation: podman_generate_systemd
+        podman_operation: podman_systemd_restart_pod_or_container
         target: "{{ pod_name if pod_name | d('') is truthy else container_name }}"
         quadlet: "{{ _quadlet_file_status }}"
-
-    - name: evaluate _podman_container_create_changed for {{ _container.name }}
-      ansible.builtin.set_fact:
-        _podman_container_create_changed: "{{
-          true if _podman_container_create_changed | d(false) | bool or _podman_generate_systemd_changed | bool else false }}"

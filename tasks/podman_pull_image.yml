@@ -22,6 +22,14 @@
             WantedBy=default.target
       register: _quadlet_file_status
 
+    - name: Update container image {{ image_name ~ ':' ~ image_tag }}
+      containers.podman.podman_image:
+        name: "{{ image_name ~ ':' ~ image_tag }}"
+        tag: "{{ image_tag }}"
+        pull: true
+        force: true
+      register: _result
+
     - name: Start the systemd image unit
       environment:
         XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"

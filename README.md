@@ -6,7 +6,7 @@ The role supports different `podman_operations`.
 
 ```yaml
 podman_operations:
-  - podman_generate_systemd
+  - podman_systemd_restart_pod_or_container
   - podman_init_vars
   - podman_install
   - podman_pod_create
@@ -20,7 +20,7 @@ podman_operations:
   - _systemd_scope
   - _systemd_service_files_dir
   - _xdg_runtime_dir
-- podman_generate_systemd: provides systemd unit file management; to ensure that Podman containers will work smoothly with systemd, it is required to just create `state: created` the containers with `containers.podman.podman_container` and call `podman_generate_systemd` after the pod creation
+- podman_systemd_restart_pod_or_container: provides systemd unit file management; to ensure that Podman containers will work smoothly with systemd, it is required to just create `state: created` the containers with `containers.podman.podman_container` and call `podman_systemd_restart_pod_or_container` after the pod creation
 - podman_pod_create: creates a Podman pod to be used from other roles
 
 ## Requirements
@@ -101,14 +101,14 @@ None
   - Trigger systemd unit file creation and service enable/start
 
   ```yaml
-  - name: Include role sleif.podman podman_operation podman_generate_systemd
+  - name: Include role sleif.podman podman_operation podman_systemd_restart_pod_or_container
     ansible.builtin.include_role:
       name: sleif.podman
       apply:
         tags:
-          - podman_generate_systemd
+          - podman_systemd_restart_pod_or_container
     vars:
-      podman_operation: podman_generate_systemd
+      podman_operation: podman_systemd_restart_pod_or_container
       target: "{{ pod_name if pod_name | d('') is truthy else container_name }}"
     tags: always
   ```
