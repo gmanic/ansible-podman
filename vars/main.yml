@@ -2,8 +2,9 @@
 
 podman_operations:
   - podman_container_create
-  - podman_systemd_restart_pod_or_container
+  - podman_image_build
+  - podman_image_pull
   - podman_init_vars
   - podman_install
   - podman_pod_create
-  - podman_pull_image
+  - podman_systemd_restart_pod_or_container

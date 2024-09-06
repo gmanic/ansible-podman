@@ -34,6 +34,11 @@
       loop: "{{ pod_volumes | d([]) }}"
       when:
         - item.state | d('directory') == 'directory'
+      register: _volume_directories_create
+
+    - name: enumerate _pod_create_changed for {{ _container.name }}
+      ansible.builtin.set_fact:
+        _pod_create_changed: "{{ true if _pod_create_changed | d(false) | bool or _volume_directories_create.changed | d(false) | bool else false }}"
 
     - name: Reset _volumes to an empty list
       ansible.builtin.set_fact:
@@ -60,15 +65,23 @@
             WantedBy=default.target
         state: quadlet
         volumes: "{{ _pod_volumes }}"
-      register: _quadlet_file_status
+      register: _pod_create_quadlet
     # - debug: var=_quadlet_file_status
     # - pause:
+
+    - name: enumerate _pod_create_changed for {{ pod_name }}
+      ansible.builtin.set_fact:
+        _pod_create_changed: "{{ true if _pod_create_changed | d(false) | bool or _pod_create_quadlet.changed | bool else false }}"
+
+    - name: debug _container_create_changed for {{ pod_name }}
+      ansible.builtin.debug:
+        msg: "pod creation for {{ pod_name }} has{{ _pod_create_changed | bool | ternary('', ' not') }} changed."
 
     - name: Include tasks from podman_systemd_restart_pod_or_container
       ansible.builtin.include_tasks:
         file: podman_systemd_restart_pod_or_container.yml
       vars:
         target: "{{ pod_name }}"
-        quadlet: "{{ _quadlet_file_status }}"
+        quadlet: "{{ _pod_create_quadlet }}"
       when:
-        - _quadlet_file_status.changed | bool or _pod_info.pods | length == 0
+        - _pod_create_changed | bool or _pod_info.pods | length == 0

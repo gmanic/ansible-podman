@@ -6,10 +6,13 @@ The role supports different `podman_operations`.
 
 ```yaml
 podman_operations:
-  - podman_systemd_restart_pod_or_container
+  - podman_container_create
+  - podman_image_build
+  - podman_image_pull
   - podman_init_vars
   - podman_install
   - podman_pod_create
+  - podman_systemd_restart_pod_or_container
 ```
 
 - podman_install: installs Podman and prepares rootfull and rootless operations
@@ -116,14 +119,14 @@ None
   - Create a complete container
 
   ```yaml
-  - name: Include role sleif.podman podman_operation podman_create_container
+  - name: Include role sleif.podman podman_operation podman_container_create
     ansible.builtin.include_role:
       name: sleif.podman
       apply:
         tags:
-          - podman_create_container
+          - podman_container_create
     vars:
-      podman_operation: podman_create_container
+      podman_operation: podman_container_create
       target: "{{ pod_name if pod_name | d('') is truthy else container_name }}"
       container_name: 'foo'
       hostname: 'foo-host'

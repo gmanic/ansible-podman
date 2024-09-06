@@ -1,0 +1,88 @@
+---
+
+- name: Include podman_init_vars.yml from sleif.podman
+  ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files: sleif.podman/tasks/includes/podman_init_vars.yml
+      paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
+
+- name: image build block
+  when:
+    - _build_required | d(false) | bool
+  block:
+    - name: Create Containerfile build directory for {{ _container_name }}
+      ansible.builtin.file:
+        path: "{{ _container_storage_dir_base_local }}/build/{{ _container_name }}"
+        state: directory
+        mode: "0700"
+
+    - name: Create Containerfile for {{ _container_name }}
+      become: "{{ podman_rootless | bool }}"
+      become_user: "{{ podman_user if podman_rootless | bool else omit }}"
+      ansible.builtin.copy:
+        dest: "{{ _container_storage_dir_base_local }}/build/{{ _container_name }}/Containerfile"
+        content: "{{ _containerfile_content }}"
+        # owner: "{{ _owner }}"
+        # group: "{{ _group }}"
+        mode: "0600"
+      register: _containerfile_status
+
+    - name: Enumerate _build_restart_required for {{ _container_name }}
+      ansible.builtin.set_fact:
+        _build_restart_required: "{{ true if _build_restart_required | d(false) | bool or _containerfile_status.changed | bool else false }}"
+
+    - name: Create build quadlet file for {{ _container_name }}
+      become: "{{ podman_rootless | bool }}"
+      become_user: "{{ podman_user if podman_rootless | bool else omit }}"
+      ansible.builtin.copy:
+        dest: "{{ _quadlet_files_dir }}/{{ _container_name }}.build"
+        content: |-
+          [Build]
+          File={{ _container_storage_dir_base_local }}/build/{{ _container_name }}/Containerfile
+          ImageTag=localhost__{{ _image_name }}:{{ _image_tag }}
+        # owner: "{{ _owner }}"
+        # group: "{{ _group }}"
+        mode: "0600"
+      register: _build_quadlet_status
+
+    - name: enumerate _build_restart_required for {{ _container_name }}
+      ansible.builtin.set_fact:
+        _build_restart_required: "{{ true if _build_restart_required | d(false) | bool or _build_quadlet_status.changed | bool else false }}"
+
+    - name: Get info for image localhost__{{ _image_name }}:{{ _image_tag }}
+      containers.podman.podman_image_info:
+        name: "localhost__{{ _image_name }}:{{ _image_tag }}"
+      register: _image_info
+
+    - name: enumerate _build_restart_required for {{ _container_name }}
+      ansible.builtin.set_fact:
+        _build_restart_required: "{{ true if _build_restart_required | d(false) | bool or _image_info.images is falsy else false }}"
+
+    - name: Start the systemd build unit
+      environment:
+        XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"
+      ansible.builtin.systemd_service:
+        name: "{{ _container_name | basename ~ '-build' }}"
+        daemon_reload: true
+        # enabled: true
+        scope: "{{ _systemd_scope }}"
+        state: "{{ _build_restart_required | ternary('restarted', 'started') }}"
+
+    - name: set_fact _image_build_changed
+      ansible.builtin.set_fact:
+        _image_build_changed: "{{ true if _image_build_changed | d(false) | bool or _build_restart_required | bool else false }}"
+
+    - name: debug _image_build_changed for {{ _container_name }}
+      ansible.builtin.debug:
+        msg: "local image build for {{ _container_name }} has{{ _image_build_changed | bool | ternary('', ' not') }} changed."
+
+- name: Cleanup local image build
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ _container_storage_dir_base_local }}/build/{{ _container_name }}"
+    - "{{ _quadlet_files_dir }}/{{ _container_name }}.build"
+  when:
+    - not _build_required | d(false) | bool

@@ -1,8 +1,8 @@
 ---
 
-- name: reset _podman_container_create_changed for {{ _container.name }}
+- name: reset _container_create_changed for {{ _container.name }}
   ansible.builtin.set_fact:
-    _podman_container_create_changed: false
+    _container_create_changed: false
 
 - name: Include podman_init_vars.yml from sleif.podman
   ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
@@ -55,22 +55,51 @@
       no_log: true
       tags: podman_secrets
 
-    - name: Include role sleif.podman podman_operation podman_pull_image for {{ _container.name }}
+
+    - name: Include role sleif.podman podman_operation podman_image_pull for {{ _container.image.name ~ ':' ~ _container.image.tag }}
       ansible.builtin.include_role:
         name: sleif.podman
         apply:
           tags:
-            - podman_pull_image
+            - podman_image_pull
       vars:
-        podman_operation: podman_pull_image
+        podman_operation: podman_image_pull
         image_name: "{{ _container.image.name }}"
         image_tag: "{{ _container.image.tag }}"
-        _result: {}
 
-    - name: evaluate _podman_container_create_changed for {{ _container.name }}
+    - name: Include role sleif.podman podman_operation podman_image_pull for additional images
+      ansible.builtin.include_role:
+        name: sleif.podman
+        apply:
+          tags:
+            - podman_image_pull
+      loop: "{{ _container.additional_images | default([]) }}"
+      vars:
+        podman_operation: podman_image_pull
+        image_name: "{{ item.name }}"
+        image_tag: "{{ item.tag }}"
+
+    - name: enumerate _container_create_changed for {{ _container.name }}
       ansible.builtin.set_fact:
-        _podman_container_create_changed: "{{ true if _podman_container_create_changed | d(false) | bool
-          or _result.changed | bool or _quadlet_file_status.changed | bool else false }}"
+        _container_create_changed: "{{ true if _container_create_changed | d(false) | bool or _image_pull_changed | bool else false }}"
+
+    - name: Include role sleif.podman podman_operation podman_image_build for {{ _container.name }}
+      ansible.builtin.include_role:
+        name: sleif.podman
+        apply:
+          tags:
+            - podman_image_build
+      vars:
+        podman_operation: podman_image_build
+        _build_required: "{{ _container.build_required | d(false) }}"
+        _container_name: "{{ _container.name }}"
+        _containerfile_content: "{{ _container.containerfile_content }}"
+        _image_name: "{{ _container.image.name }}"
+        _image_tag: "{{ _container.image.tag }}"
+
+    - name: enumerate _container_create_changed for {{ _container.name }}
+      ansible.builtin.set_fact:
+        _container_create_changed: "{{ true if _container_create_changed | d(false) | bool or _image_build_changed | d(false) | bool else false }}"
 
     - name: Set_fact _pod_file_name
       ansible.builtin.set_fact:
@@ -93,7 +122,7 @@
         dns_servers: "{{ _container.dns_servers | default(omit) }}"
         env: "{{ _container.env | default(omit) }}"
         hostname: "{{ _container.hostname | d(_container.name) if not _container.pod | d('') is truthy else omit }}"
-        image: "{{ _container.image.name }}:{{ _container.image.tag }}"
+        image: "{{ _container.build_required | d(false) | bool | ternary('localhost__', '') }}{{ _container.image.name ~ ':' ~ _container.image.tag }}"
         memory: "{{ _container.memory | default(omit) }}"
         name: "{{ _container.name }}"
         # network_aliases: "{{ _container.hostname }}"
@@ -119,13 +148,17 @@
         volumes_from: "{{ _container.volumes_from | d([]) }}"
         volumes: "{{ _volumes }}"
         workdir: "{{ _container.workdir | d(omit) }}"
-      register: _quadlet_file_status
-    # - debug: var=_quadlet_file_status
+      register: _container_create_quadlet
+    # - debug: var=_container_create_quadlet
     # - pause:
 
-    - name: evaluate _podman_container_create_changed for {{ _container.name }}
+    - name: enumerate _container_create_changed for {{ _container.name }}
       ansible.builtin.set_fact:
-        _podman_container_create_changed: "{{ true if _podman_container_create_changed | d(false) | bool or _quadlet_file_status.changed | bool else false }}"
+        _container_create_changed: "{{ true if _container_create_changed | d(false) | bool or _container_create_quadlet.changed | bool else false }}"
+
+    - name: debug _container_create_changed for {{ _container.name }}
+      ansible.builtin.debug:
+        msg: "container creation for {{ _container.name }} has{{ _container_create_changed | bool | ternary('', ' not') }} changed."
 
     - name: Include role sleif.podman podman_operation podman_systemd_restart_pod_or_container
       ansible.builtin.include_role:
@@ -136,4 +169,4 @@
       vars:
         podman_operation: podman_systemd_restart_pod_or_container
         target: "{{ pod_name if pod_name | d('') is truthy else container_name }}"
-        quadlet: "{{ _quadlet_file_status }}"
+        quadlet: "{{ _container_create_quadlet }}"

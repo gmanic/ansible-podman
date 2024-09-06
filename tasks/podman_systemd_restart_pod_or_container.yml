@@ -24,6 +24,7 @@
       when:
         - _pod_info.pods | length == 0
       changed_when: false
+      failed_when: false
       ignore_errors: true
 
     - name: Podman systemd restart pod or container | gather info about the container {{ target }}
@@ -51,4 +52,4 @@
         daemon_reload: true
         # enabled: true
         scope: "{{ _systemd_scope }}"
-        state: "{{ 'restarted' if quadlet.changed | bool or _target_state != 'running' or _podman_container_create_changed | d(false) | bool else 'started' }}"
+        state: "{{ 'restarted' if quadlet.changed | bool or _target_state != 'running' or _container_create_changed | d(false) | bool else 'started' }}"

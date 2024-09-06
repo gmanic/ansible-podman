@@ -1,0 +1,72 @@
+---
+
+- name: Include podman_init_vars.yml from sleif.podman
+  ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files: sleif.podman/tasks/includes/podman_init_vars.yml
+      paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
+
+- name: Create quadlet file for and pull image
+  become: "{{ podman_rootless | d(true) | bool }}"
+  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
+  block:
+    # - name: Create quadlet file for image build {{ image_name ~ ':' ~ image_tag | d('latest') }}
+    #   containers.podman.podman_image:
+    #     name: "{{ image_name ~ ':' ~ image_tag ~ '-' ~ 'sleif' }}"
+    #     tag: "{{ image_tag ~ '-' ~ 'sleif' }}"
+    #     state: quadlet
+    #     build:
+    #         # FROM {{ image_name ~ ':' ~ image_tag ~ '-builder' }} AS builder
+    #       container_file: |-
+    #         FROM {{ image_name ~ ':' ~ '2-builder-alpine' }} AS builder
+    #         RUN xcaddy build \
+    #             --with github.com/caddy-dns/rfc2136
+    #         FROM {{ image_name ~ ':' ~ image_tag }}
+    #         COPY --from=builder /usr/bin/caddy /usr/bin/caddy
+    #   register: _build_status
+    # - debug: var=_build_status
+    # - pause:
+
+    - name: enumerate _image_pull_changed
+      ansible.builtin.set_fact:
+        _quadlet_basename: "{{ image_name | replace('/', '__') ~ '__' ~ image_tag }}"
+
+    - name: Create quadlet file for image {{ image_name ~ ':' ~ image_tag | d('latest') }}
+      containers.podman.podman_image:
+        name: "{{ image_name ~ ':' ~ image_tag }}"
+        tag: "{{ image_tag }}"
+        state: quadlet
+        quadlet_filename: "{{ _quadlet_basename }}"
+        quadlet_options:
+          - |
+            [Install]
+            WantedBy=default.target
+      register: _quadlet_file_status
+
+    - name: Update container image {{ image_name ~ ':' ~ image_tag }}
+      containers.podman.podman_image:
+        name: "{{ image_name ~ ':' ~ image_tag }}"
+        tag: "{{ image_tag }}"
+        pull: true
+        force: true
+      register: _image_pull_status
+
+    - name: Start the systemd image unit
+      environment:
+        XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir }}"
+      ansible.builtin.systemd_service:
+        name: "{{ _quadlet_basename ~ '-image' }}"
+        daemon_reload: true
+        # enabled: true
+        scope: "{{ _systemd_scope }}"
+        state: "started"
+
+    - name: enumerate _image_pull_changed
+      ansible.builtin.set_fact:
+        _image_pull_changed: "{{ true if _image_pull_changed | d(false) | bool or _image_pull_status.changed | bool
+          or _quadlet_file_status.changed | bool else false }}"
+
+    - name: debug _image_pull_changed for {{ image_name ~ ':' ~ image_tag }}
+      ansible.builtin.debug:
+        msg: "image has{{ _image_pull_changed | bool | ternary('', ' not') }} changed: {{ image_name ~ ':' ~ image_tag }}"
