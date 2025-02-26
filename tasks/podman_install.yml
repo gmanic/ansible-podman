@@ -2,23 +2,7 @@
 
 # net.core.rmem_max = 2500000
 
-- name: Block to get Podman 5.x on EL9
-  when:
-    - ansible_os_family == "RedHat"
-    - ansible_distribution_major_version == '9'
-  block:
-    - name: remove package gvisor-tap-vsock
-      ansible.builtin.package:
-        name: "gvisor-tap-vsock"
-        state: absent
-    # https://copr.fedorainfracloud.org/coprs/rhcontainerbot/podman-next/
-    - name: Activate podman copr on EL9 - required to get podman 5.x
-      community.general.copr:
-        state: disabled
-        name: rhcontainerbot/podman-next
-        chroot: epel-9-x86_64
-
-- name: Install and update podman  # noqa: package-latest
+- name: Install and update podman; enable copr.fedorainfracloud.org rhcontainerbot podman-next  # noqa: package-latest
   ansible.builtin.dnf:
     name: "{{ podman_packages }}"
     enablerepo: "copr:copr.fedorainfracloud.org:rhcontainerbot:podman-next"
@@ -186,7 +170,7 @@
       # previous containers.conf settings, or the default settings.
       #
   loop:
-    - "/etc/containers/containers.conf"
+    # - "/etc/containers/containers.conf"
     - "{{ podman_user_home + '/.config/containers/containers.conf' }}"
 
 - name: Configure timezone
@@ -239,23 +223,23 @@
       # The "container storage" table contains all of the server options.
       #
   loop:
-    - "/etc/containers/storage.conf"
+    # - "/etc/containers/storage.conf"
     - "{{ podman_user_home + '/.config/containers/storage.conf' }}"
 
-- name: Configure podman storage global
-  community.general.ini_file:
-    path: /etc/containers/storage.conf
-    mode: "0644"
-    section: "{{ item.section }}"
-    option: "{{ item.option }}"
-    value: "{{ item.value }}"
-    state: "{{ item.state }}"
-    no_extra_spaces: false
-  loop:
-    - {section: 'storage', option: 'driver', value: '"overlay"', state: 'present'}
-    - {section: 'storage.options.overlay', option: 'mount_program', value: '"/usr/bin/fuse-overlayfs"', state: 'absent'}
-    # - {section: 'storage.options.overlay', option: 'mount_program', value: '"/usr/bin/fuse-overlayfs"',
-    #   state: "{{ 'present' if podman_rootless | bool else 'absent' }}"}
+# - name: Configure podman storage global
+#   community.general.ini_file:
+#     path: /etc/containers/storage.conf
+#     mode: "0644"
+#     section: "{{ item.section }}"
+#     option: "{{ item.option }}"
+#     value: "{{ item.value }}"
+#     state: "{{ item.state }}"
+#     no_extra_spaces: false
+#   loop:
+#     - {section: 'storage', option: 'driver', value: '"overlay"', state: 'present'}
+#     - {section: 'storage.options.overlay', option: 'mount_program', value: '"/usr/bin/fuse-overlayfs"', state: 'absent'}
+#     # - {section: 'storage.options.overlay', option: 'mount_program', value: '"/usr/bin/fuse-overlayfs"',
+#     #   state: "{{ 'present' if podman_rootless | bool else 'absent' }}"}
 
 - name: Configure podman storage rootless
   community.general.ini_file:
