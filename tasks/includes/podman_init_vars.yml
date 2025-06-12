@@ -18,6 +18,8 @@
     _group: "{{ podman_group | d('podman') if podman_rootless | bool else 'root' }}"
     _owner: "{{ podman_user | d('podman') if podman_rootless | bool else 'root' }}"
     _systemd_scope: "{{ 'user' if podman_rootless | bool else 'system' }}"
+    _system_prune: "{{ podman_system_prune | d(false) }}"
+    _system_prune_min_free_gb: "{{ podman_system_prune_min_free_gb | d(5) }}"
     _quadlet_files_dir: "{{ container_storage_dir_base_local + '/' + podman_user | d('podman') + '/.config/containers/systemd/'
         if podman_rootless | bool else '/etc/containers/systemd/' }}"
     _systemd_service_files_dir: "{{ container_storage_dir_base_local + '/' + podman_user | d('podman') + '/.config/systemd/user/'

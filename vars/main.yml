@@ -7,4 +7,5 @@ podman_operations:
   - podman_init_vars
   - podman_install
   - podman_pod_create
+  - podman_system_prune
   - podman_systemd_restart_pod_or_container

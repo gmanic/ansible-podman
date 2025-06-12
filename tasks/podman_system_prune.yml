@@ -1,0 +1,46 @@
+---
+
+- name: Podman_system_prune | Include podman_init_vars.yml from sleif.podman
+  ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files: sleif.podman/tasks/includes/podman_init_vars.yml
+      paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
+
+- name: Podman_system_prune | Block Prune everything (including non-dangling images)
+  become: "{{ podman_rootless | d(true) | bool }}"
+  become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
+  block:
+    - name: Podman_system_prune | Get Podman image directory
+      ansible.builtin.command: podman info --format '{{ "{{ .Store.GraphRoot }}" }}'
+      register: _podman_image_dir
+      changed_when: false
+
+    - name: Podman_system_prune | Get available disk space on Podman image dir
+      ansible.builtin.command: df --output=avail -B1 "{{ _podman_image_dir.stdout }}"
+      register: _disk_free_output
+      changed_when: false
+
+    - name: Podman_system_prune | Extract free bytes
+      ansible.builtin.set_fact:
+        _podman_free_bytes: "{{ _disk_free_output.stdout_lines[1] | int }}"
+
+    - name: Podman_system_prune | Convert minimum free GB to bytes
+      ansible.builtin.set_fact:
+        _system_prune_min_free_bytes: "{{ _system_prune_min_free_gb | int * 1024 * 1024 * 1024 }}"
+
+    # - debug: var=_podman_free_bytes
+    # - debug: var=_system_prune_min_free_bytes
+
+    - name: Podman_system_prune | Prune everything (including non-dangling images)
+      containers.podman.podman_prune:
+        system: true
+        system_all: true
+        system_volumes: true
+      register: _system_prune_results
+      when: _podman_free_bytes | int < _system_prune_min_free_bytes | int
+
+    - name: Podman_system_prune | Debug system prune results
+      ansible.builtin.debug:
+        var: _system_prune_results
+      when: _podman_free_bytes | int < _system_prune_min_free_bytes | int

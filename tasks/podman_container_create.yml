@@ -43,6 +43,18 @@
         podman_operation: podman_pod_create
       tags: always
 
+    - name: Include role sleif.podman podman_operation podman_system_prune - creates a  pod if necessary
+      ansible.builtin.include_role:
+        name: sleif.podman
+        apply:
+          tags:
+            - podman_system_prune
+      vars:
+        podman_operation: podman_system_prune
+      when:
+        - _system_prune | bool
+      tags: always
+
     - name: Create Podman secrets for {{ _container.name }}
       become: "{{ podman_rootless | bool }}"
       become_user: "{{ podman_user if podman_rootless | bool else omit }}"

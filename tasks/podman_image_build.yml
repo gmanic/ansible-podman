@@ -68,6 +68,7 @@
         # enabled: true
         scope: "{{ _systemd_scope }}"
         state: "{{ _build_restart_required | ternary('restarted', 'started') }}"
+      changed_when: false
 
     - name: set_fact _image_build_changed
       ansible.builtin.set_fact:

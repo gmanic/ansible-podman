@@ -26,6 +26,9 @@ podman_packages:
   - slirp4netns
   - passt
 
+podman_system_prune: false
+podman_system_prune_min_free_gb: 5
+
 # podman_packages with copr
 # podman_packages:
 #   - aardvark-dns >= 1.11
