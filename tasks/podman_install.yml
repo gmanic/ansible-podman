@@ -282,50 +282,19 @@
     - {name: "net.core.rmem_max", value: "7500000"}
     - {name: "net.core.wmem_max", value: "7500000"}
 
-- name: Podman network rootful
-  containers.podman.podman_network:
-    name: "{{ podman_networks.podman_network_root.podman_network_name }}"
-    driver: 'bridge'
-    internal: false
-    # ip_range: "{{ podman_networks.podman_network_root.podman_network_iprange }}"
-    subnet: "{{ podman_networks.podman_network_root.podman_network_subnet }}"
-    gateway: "{{ podman_networks.podman_network_root.podman_network_gateway }}"
-    disable_dns: "{{ podman_networks.podman_network_root.podman_network_disabledns | d(false) }}"
-    ipv6: false
-    # recreate: true
-    state: quadlet
-  register: _quadlet_file_status
-
-- name: Start the systemd network unit rootful
-  ansible.builtin.systemd_service:
-    name: "{{ podman_networks.podman_network_root.podman_network_name ~ '-network' }}"
-    daemon_reload: true
-    scope: "system"
-    state: "started"
-
-- name: Podman network rootless
-  become: true
-  become_user: "{{ podman_user }}"
-  containers.podman.podman_network:
-    name: "{{ podman_networks.podman_network_rootless.podman_network_name }}"
-    driver: 'bridge'
-    internal: false
-    # ip_range: "{{ podman_networks.podman_network_rootless.podman_network_iprange }}"
-    subnet: "{{ podman_networks.podman_network_rootless.podman_network_subnet }}"
-    gateway: "{{ podman_networks.podman_network_rootless.podman_network_gateway }}"
-    disable_dns: false
-    ipv6: false
-    # recreate: true
-    state: quadlet
-  register: _quadlet_file_status
-
-- name: Start the systemd network unit rootless
-  become: true
-  become_user: "{{ podman_user }}"
-  environment:
-    XDG_RUNTIME_DIR: "{{ '/run/user/' + _container_run_as_uid.stdout }}"
-  ansible.builtin.systemd_service:
-    name: "{{ podman_networks.podman_network_rootless.podman_network_name ~ '-network' }}"
-    daemon_reload: true
-    scope: "user"
-    state: "started"
+# include network create operation
+- name: Include role sleif.podman podman_operation podman_network_create - creates a network if necessary
+  ansible.builtin.include_role:
+    name: sleif.podman
+    apply:
+      tags:
+        - podman_network_create
+  vars:
+    podman_network_name: "{{ item.podman_network_name }}"
+    podman_network_subnet: "{{ item.podman_network.podman_network_subnet }}"
+    podman_network_gateway: "{{ item.podman_network.podman_network_gateway }}"
+    podman_network_disabledns: "{{ item.podman_network.podman_network_disabledns }}"
+    podman_operation: podman_network_create
+  with_items:
+    - "{{ podman_networks }}"
+#  tags: always

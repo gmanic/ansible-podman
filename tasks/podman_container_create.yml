@@ -11,6 +11,24 @@
       files: sleif.podman/tasks/includes/podman_init_vars.yml
       paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
 
+# include network create operation
+- name: Include role sleif.podman podman_operation podman_network_create - creates a network if necessary
+  ansible.builtin.include_role:
+    name: sleif.podman
+    apply:
+      tags:
+        - podman_network_create
+  vars:
+    podman_network_name: "{{ item.podman_network_name }}"
+    podman_network_subnet: "{{ item.podman_network.podman_network_subnet }}"
+    podman_network_gateway: "{{ item.podman_network.podman_network_gateway }}"
+    podman_network_disabledns: "{{ item.podman_network.podman_network_disabledns }}"
+    podman_operation: podman_network_create
+  with_items:
+    - "{{ podman_networks }}"
+  register: _networks
+#  tags: always
+
 - name: Container create block
   become: "{{ podman_rootless | d(true) | bool }}"
   become_user: "{{ podman_user if podman_rootless | d(true) | bool else omit }}"
@@ -41,6 +59,7 @@
             - podman_pod_create
       vars:
         podman_operation: podman_pod_create
+        podman_networks: "{{ _networks if _networks is defined else omit }}"
       tags: always
 
     - name: Include role sleif.podman podman_operation podman_system_prune - creates a  pod if necessary
@@ -139,6 +158,7 @@
         memory: "{{ _container.memory | default(omit) }}"
         name: "{{ _container.name }}"
         # network_aliases: "{{ _container.hostname }}"
+# ToDo: enable multiple networks being defined to attach to a container; has to be list of network_names
         network: "{{ _container.network | d(podman_network_name if pod_name | d('') is falsy else []) }}"
         pod: "{{ _pod_file_name if _pod_file_name is truthy else omit }}"
         publish: "{{ _container.publish | default([]) }}"
