@@ -140,7 +140,7 @@
     group: "{{ podman_group }}"
     mode: '0700'
 
-- name: Create podman configurtation directory for rootless operations
+- name: Create podman configuration directory for rootless operations
   ansible.builtin.file:
     path: "{{ podman_user_home + '/.config/containers' }}"
     state: directory
@@ -283,18 +283,17 @@
     - {name: "net.core.wmem_max", value: "7500000"}
 
 # include network create operation
-- name: Include role sleif.podman podman_operation podman_network_create - creates a network if necessary
-  ansible.builtin.include_role:
-    name: sleif.podman
+- name: Include tasks from gmanic.podman/tasks/podman_network_create.yml - creates a network if necessary
+  ansible.builtin.include_tasks:
+    file: podman_network_create.yml
     apply:
       tags:
         - podman_network_create
   vars:
     podman_network_name: "{{ item.podman_network_name }}"
-    podman_network_subnet: "{{ item.podman_network.podman_network_subnet }}"
-    podman_network_gateway: "{{ item.podman_network.podman_network_gateway }}"
-    podman_network_disabledns: "{{ item.podman_network.podman_network_disabledns }}"
-    podman_operation: podman_network_create
+    podman_network_subnet: "{{ item.podman_network_subnet }}"
+    podman_network_gateway: "{{ item.podman_network_gateway }}"
+    podman_network_disabledns: "{{ item.podman_network_disabledns }}"
   with_items:
     - "{{ podman_networks }}"
 #  tags: always

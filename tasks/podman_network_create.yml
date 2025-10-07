@@ -10,7 +10,7 @@
   ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
   vars:
     params:
-      files: sleif.podman/tasks/includes/podman_init_vars.yml
+      files: gmanic.podman/tasks/includes/podman_init_vars.yml
       paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
 
 - name: Network create block
@@ -21,7 +21,7 @@
   environment:
     XDG_RUNTIME_DIR: "{{ '/run/user/' + _container_run_as_uid.stdout if podman_rootless | d(true) | bool else omit }}"
   block:
-    - name: Podman network rootful
+    - name: Podman network create {{ podman_network_name }}
       containers.podman.podman_network:
         name: "{{ podman_network_name }}"
         driver: 'bridge'

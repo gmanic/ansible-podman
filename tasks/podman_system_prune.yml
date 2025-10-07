@@ -4,7 +4,7 @@
   ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
   vars:
     params:
-      files: sleif.podman/tasks/includes/podman_init_vars.yml
+      files: gmanic.podman/tasks/includes/podman_init_vars.yml
       paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
 
 - name: Podman_system_prune | Block Prune everything (including non-dangling images)

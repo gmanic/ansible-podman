@@ -8,26 +8,37 @@
   ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
   vars:
     params:
-      files: sleif.podman/tasks/includes/podman_init_vars.yml
+      files: gmanic.podman/tasks/includes/podman_init_vars.yml
       paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
 
 # include network create operation
 - name: Include role sleif.podman podman_operation podman_network_create - creates a network if necessary
   ansible.builtin.include_role:
-    name: sleif.podman
+    name: gmanic.podman
     apply:
       tags:
         - podman_network_create
   vars:
     podman_network_name: "{{ item.podman_network_name }}"
-    podman_network_subnet: "{{ item.podman_network.podman_network_subnet }}"
-    podman_network_gateway: "{{ item.podman_network.podman_network_gateway }}"
-    podman_network_disabledns: "{{ item.podman_network.podman_network_disabledns }}"
+    podman_network_subnet: "{{ item.podman_network_subnet }}"
+    podman_network_gateway: "{{ item.podman_network_gateway }}"
+    podman_network_disabledns: "{{ item.podman_network_disabledns }}"
     podman_operation: podman_network_create
   with_items:
     - "{{ podman_networks }}"
   register: _networks
 #  tags: always
+  when: podman_networks is defined
+
+- name: Create List of podman_networks.[network.podman_network_name]
+  ansible.builtin.set_fact:
+    podman_network_names: "{{ podman_network_names | default([]) + [ item.podman_network_name  ] }}"
+  loop: "{{ podman_networks }}"
+  when: podman_networks is defined
+
+- name: Debug podman_network_names
+  ansible.builtin.debug:
+    msg: "{{ podman_network_names }}"
 
 - name: Container create block
   become: "{{ podman_rootless | d(true) | bool }}"
@@ -53,7 +64,7 @@
 
     - name: Include role sleif.podman podman_operation podman_pod_create - creates a  pod if necessary
       ansible.builtin.include_role:
-        name: sleif.podman
+        name: gmanic.podman
         apply:
           tags:
             - podman_pod_create
@@ -64,7 +75,7 @@
 
     - name: Include role sleif.podman podman_operation podman_system_prune - creates a  pod if necessary
       ansible.builtin.include_role:
-        name: sleif.podman
+        name: gmanic.podman
         apply:
           tags:
             - podman_system_prune
@@ -89,7 +100,7 @@
 
     - name: Include role sleif.podman podman_operation podman_image_pull for {{ _container.image.name ~ ':' ~ _container.image.tag }}
       ansible.builtin.include_role:
-        name: sleif.podman
+        name: gmanic.podman
         apply:
           tags:
             - podman_image_pull
@@ -100,7 +111,7 @@
 
     - name: Include role sleif.podman podman_operation podman_image_pull for additional images
       ansible.builtin.include_role:
-        name: sleif.podman
+        name: gmanic.podman
         apply:
           tags:
             - podman_image_pull
@@ -116,7 +127,7 @@
 
     - name: Include role sleif.podman podman_operation podman_image_build for {{ _container.name }}
       ansible.builtin.include_role:
-        name: sleif.podman
+        name: gmanic.podman
         apply:
           tags:
             - podman_image_build
@@ -195,7 +206,7 @@
 
     - name: Include role sleif.podman podman_operation podman_systemd_restart_pod_or_container
       ansible.builtin.include_role:
-        name: sleif.podman
+        name: gmanic.podman
         apply:
           tags:
             - podman_systemd_restart_pod_or_container
