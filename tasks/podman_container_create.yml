@@ -30,15 +30,23 @@
 #  tags: always
   when: podman_networks is defined
 
-- name: Create List of podman_networks.[network.podman_network_name]
+- name: Clear podman_network_names to cleanly enumerate networks
+  ansible.builtin.set_fact:
+    podman_network_names: []
+  when: podman_networks is defined
+
+- name: Enumerate of podman_networks.[network].podman_network_name
   ansible.builtin.set_fact:
     podman_network_names: "{{ podman_network_names | default([]) + [ item.podman_network_name  ] }}"
-  loop: "{{ podman_networks }}"
+  with_items: "{{ podman_networks }}"
   when: podman_networks is defined
 
 - name: Debug podman_network_names
   ansible.builtin.debug:
     msg: "{{ podman_network_names }}"
+- name: Debug podman_networks
+  ansible.builtin.debug:
+    msg: "{{ podman_networks }}"
 
 - name: Container create block
   become: "{{ podman_rootless | d(true) | bool }}"

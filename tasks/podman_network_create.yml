@@ -35,7 +35,7 @@
         state: quadlet
       register: _quadlet_file_status
 
-    - name: Start the systemd network unit rootful
+    - name: Start the systemd network unit
       ansible.builtin.systemd_service:
         name: "{{ podman_network_name ~ '-network' }}"
         daemon_reload: true
