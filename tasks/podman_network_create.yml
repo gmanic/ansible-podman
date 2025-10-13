@@ -25,12 +25,12 @@
       containers.podman.podman_network:
         name: "{{ podman_network_name }}"
         driver: 'bridge'
-        internal: false
+        internal: "{{ podman_network_internal | d(false) }}"
         # ip_range: "{{ podman_network_iprange }}"
         subnet: "{{ podman_network_subnet }}"
         gateway: "{{ podman_network_gateway }}"
         disable_dns: "{{ podman_network_disabledns | d(false) }}"
-        ipv6: true
+        ipv6: "{{ podman_network_ipv6 | d(false) }}"
         # recreate: true
         state: quadlet
       register: _quadlet_file_status
