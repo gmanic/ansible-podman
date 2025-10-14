@@ -24,6 +24,7 @@
     podman_socket_sockets: "{{ item.podman_sockets_sockets }}"
   with_items:
     - "{{ podman_sockets }}"
+  when: podman_sockets is defined
 
 # include network create operation
 - name: Include role sleif.podman podman_operation podman_network_create - creates a network if necessary
