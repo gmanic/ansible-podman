@@ -12,6 +12,7 @@ podman_operations:
   - podman_init_vars
   - podman_install
   - podman_network_create
+  - podman_socket_create
   - podman_pod_create
   - podman_systemd_restart_pod_or_container
 ```
@@ -27,7 +28,7 @@ podman_operations:
 - podman_systemd_restart_pod_or_container: provides systemd unit file management; to ensure that Podman containers will work smoothly with systemd, it is required to just create `state: created` the containers with `containers.podman.podman_container` and call `podman_systemd_restart_pod_or_container` after the pod creation
 - podman_pod_create: creates a Podman pod to be used from other roles
 - podman_network_create: creates Podman networks as defined as dict in podman_networks automagically while creating containers, before creation of container(s) or pod (if required). Also creates networks while installing podman, if podman_networks is defined at that stage (like standard networks). Of course, in proper context (rootful/rootless)
-
+- podman_socket_create: creates a socket (systemd-unit) for a particular container (e.g. caddyserver to do networking rootless on host ports without networking involved)
 ## Requirements
 
 None
@@ -139,6 +140,13 @@ Both networks defined will be created
           podman_network_subnet: '10.10.0.0/24'
           podman_network_gateway: '10.10.0.1'
           podman_network_iprange: '10.10.0.128/25'
+      podman_sockets:
+        - podman_sockets_name: "{{ container_name }}"
+          podman_sockets_sockets:
+            - "ListenStream=[::]:80"    # in caddy: fd/3
+            - "ListenStream=[::]:443"   # in caddy: fd/4
+            - "ListenDatagram=[::]:443" # in caddy: fdgram/5
+            - "ListenStream=[::1]:2019"  # in caddy: fd/6
       volumes:
         - {'host': '/srv/podman/container_data/{{ container_name }}/data', 'container:' '/data'}
       secrets:
@@ -153,4 +161,4 @@ MIT
 ## Author Information
 
 Created in 2023 by Sebastian Berthold
-(network enhanced: Jens Gecius 2025)
+(network, sockets enhanced: Jens Gecius 2025)
