@@ -207,6 +207,7 @@
             TimeoutStartSec=900
             [Install]
             WantedBy=default.target
+          - "{{ quadlet_container_options if quadlet_container_options is truthy else omit }}"
         rm: false
         secrets: "{{ _container.secrets | d([]) | map(attribute='name') | list }}"
         state: quadlet
