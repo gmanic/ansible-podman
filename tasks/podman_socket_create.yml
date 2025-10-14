@@ -22,7 +22,7 @@
   ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
   vars:
     params:
-      files: gmanic.podman/tasks/includes/podman_init_vars.yml
+      files: sleif.podman/tasks/includes/podman_init_vars.yml
       paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
 
 - name: Socket create block
@@ -45,4 +45,3 @@
         scope: "{{ 'user' if podman_rootless | d(true) | bool else 'system' }}"
         state: "restarted"
   when: podman_socket_name is defined
-  

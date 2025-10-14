@@ -283,7 +283,7 @@
     - {name: "net.core.wmem_max", value: "7500000"}
 
 # include network create operation
-- name: Include tasks from gmanic.podman/tasks/podman_network_create.yml - creates a network if necessary
+- name: Include tasks from sleif.podman/tasks/podman_network_create.yml - creates a network if necessary
   ansible.builtin.include_tasks:
     file: podman_network_create.yml
     apply:

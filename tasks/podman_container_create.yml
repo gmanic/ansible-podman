@@ -8,13 +8,13 @@
   ansible.builtin.include_tasks: "{{ lookup('first_found', params) }}"
   vars:
     params:
-      files: gmanic.podman/tasks/includes/podman_init_vars.yml
+      files: sleif.podman/tasks/includes/podman_init_vars.yml
       paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
 
 # include socket create operation
 - name: Include role sleif.podman podman_operation podman_socket_create - creates a socket for container
   ansible.builtin.include_role:
-    name: gmanic.podman
+    name: sleif.podman
     apply:
       tags:
         - podman_socket_create
@@ -29,7 +29,7 @@
 # include network create operation
 - name: Include role sleif.podman podman_operation podman_network_create - creates a network if necessary
   ansible.builtin.include_role:
-    name: gmanic.podman
+    name: sleif.podman
     apply:
       tags:
         - podman_network_create
@@ -87,7 +87,7 @@
 
     - name: Include role sleif.podman podman_operation podman_pod_create - creates a  pod if necessary
       ansible.builtin.include_role:
-        name: gmanic.podman
+        name: sleif.podman
         apply:
           tags:
             - podman_pod_create
@@ -98,7 +98,7 @@
 
     - name: Include role sleif.podman podman_operation podman_system_prune - creates a  pod if necessary
       ansible.builtin.include_role:
-        name: gmanic.podman
+        name: sleif.podman
         apply:
           tags:
             - podman_system_prune
@@ -123,7 +123,7 @@
 
     - name: Include role sleif.podman podman_operation podman_image_pull for {{ _container.image.name ~ ':' ~ _container.image.tag }}
       ansible.builtin.include_role:
-        name: gmanic.podman
+        name: sleif.podman
         apply:
           tags:
             - podman_image_pull
@@ -134,7 +134,7 @@
 
     - name: Include role sleif.podman podman_operation podman_image_pull for additional images
       ansible.builtin.include_role:
-        name: gmanic.podman
+        name: sleif.podman
         apply:
           tags:
             - podman_image_pull
@@ -150,7 +150,7 @@
 
     - name: Include role sleif.podman podman_operation podman_image_build for {{ _container.name }}
       ansible.builtin.include_role:
-        name: gmanic.podman
+        name: sleif.podman
         apply:
           tags:
             - podman_image_build
@@ -230,7 +230,7 @@
 
     - name: Include role sleif.podman podman_operation podman_systemd_restart_pod_or_container
       ansible.builtin.include_role:
-        name: gmanic.podman
+        name: sleif.podman
         apply:
           tags:
             - podman_systemd_restart_pod_or_container
