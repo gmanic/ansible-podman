@@ -11,6 +11,20 @@
       files: gmanic.podman/tasks/includes/podman_init_vars.yml
       paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
 
+# include socket create operation
+- name: Include role sleif.podman podman_operation podman_socket_create - creates a socket for container
+  ansible.builtin.include_role:
+    name: gmanic.podman
+    apply:
+      tags:
+        - podman_socket_create
+  vars:
+    podman_operation: podman_socket_create
+    podman_socket_name: "{{ item.podman_sockets_name }}"
+    podman_socket_sockets: "{{ item.podman_sockets_sockets }}"
+  with_items:
+    - "{{ podman_sockets }}"
+
 # include network create operation
 - name: Include role sleif.podman podman_operation podman_network_create - creates a network if necessary
   ansible.builtin.include_role:
@@ -41,12 +55,12 @@
   with_items: "{{ podman_networks }}"
   when: podman_networks is defined
 
-- name: Debug podman_network_names
-  ansible.builtin.debug:
-    msg: "{{ podman_network_names }}"
-- name: Debug podman_networks
-  ansible.builtin.debug:
-    msg: "{{ podman_networks }}"
+#- name: Debug podman_network_names
+#  ansible.builtin.debug:
+#    msg: "{{ podman_network_names }}"
+#- name: Debug podman_networks
+#  ansible.builtin.debug:
+#    msg: "{{ podman_networks }}"
 
 - name: Container create block
   become: "{{ podman_rootless | d(true) | bool }}"
