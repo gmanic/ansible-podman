@@ -11,6 +11,11 @@
       files: sleif.podman/tasks/includes/podman_init_vars.yml
       paths: "{{ lookup('config', 'DEFAULT_ROLES_PATH') }}"
 
+- name: set fact for socket
+  ansible.builtin.set_fact:
+    pod_sock_name: "{{ podman_sockets.container }}"
+  when: podman_sockets is defined
+
 # include socket create operation
 - name: Include role sleif.podman podman_operation podman_socket_create - creates a socket for container
   ansible.builtin.include_role:
@@ -20,11 +25,9 @@
         - podman_socket_create
   vars:
     podman_operation: podman_socket_create
-    podman_socket_name: "{{ item.podman_sockets_name }}"
-    podman_socket_sockets: "{{ item.podman_sockets_sockets }}"
-  with_items:
-    - "{{ podman_sockets }}"
-  when: podman_sockets is defined
+    podman_socket_name: "{{ _container.name }}"
+    podman_socket: "{{ podman_sockets.sockets }}"
+  when: podman_sockets is defined and pod_sock_name == _container.name
 
 # include network create operation
 - name: Include role sleif.podman podman_operation podman_network_create - creates a network if necessary
@@ -207,7 +210,9 @@
             TimeoutStartSec=900
             [Install]
             WantedBy=default.target
-          - "{{ quadlet_container_options if quadlet_container_options is truthy else omit }}"
+            {{ '[Unit]
+            PartOf=' ~ _container.name ~ '.socket' if podman_sockets is defined else '' }}
+            {{ quadlet_container_options | d('') }}
         rm: false
         secrets: "{{ _container.secrets | d([]) | map(attribute='name') | list }}"
         state: quadlet

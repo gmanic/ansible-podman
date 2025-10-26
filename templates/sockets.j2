@@ -3,7 +3,7 @@
 Description={{ podman_socket_name }}
 
 [Socket]
-{% for line in podman_socket_sockets %}
+{% for line in podman_socket %}
 {{ line }}
 {% endfor %}
 Service={{ container_name }}.service

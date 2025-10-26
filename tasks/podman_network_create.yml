@@ -1,6 +1,20 @@
 ---
 # Network create operation
 
+# Required network definition
+#
+# podman_networks
+#   - podman_network_name: 'podman_net1'
+#     podman_network_subnet: '10.77.0.0/15'
+#     podman_network_gateway: '10.77.0.1'
+#     podman_network_iprange: '10.77.0.0/16'
+#     podman_network_ipv6: 'false'
+#   - podman_network_name: 'podman_net2'
+#     podman_network_subnet: '10.98.0.0/16'
+#     podman_network_gateway: '10.98.0.1'
+#     podman_network_iprange: '10.98.0.0/24'
+#     podman_network_ipv6: 'true'
+
 #- name: reset _network_create_changed for {{ _network.name }}
 #  ansible.builtin.set_fact:
 #    _network_create_changed: false
@@ -19,7 +33,7 @@
   tags:
     - podman_network_create
   environment:
-    XDG_RUNTIME_DIR: "{{ '/run/user/' + _container_run_as_uid.stdout if podman_rootless | d(true) | bool else omit }}"
+    XDG_RUNTIME_DIR: "{{ _xdg_runtime_dir if podman_rootless | d(true) | bool else omit }}"
   block:
     - name: Podman network create {{ podman_network_name }}
       containers.podman.podman_network:
@@ -35,9 +49,9 @@
         state: quadlet
       register: _quadlet_file_status
 
-    - name: Start the systemd network unit
+    - name: Start the systemd network unit in proper context
       ansible.builtin.systemd_service:
         name: "{{ podman_network_name ~ '-network' }}"
         daemon_reload: true
-        scope: "{{ 'user' if podman_rootless | d(true) | bool else 'system' }}"
+        scope: "{{ _systemd_scope }}"
         state: "started"
