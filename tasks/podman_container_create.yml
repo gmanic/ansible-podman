@@ -160,6 +160,7 @@
       vars:
         podman_operation: podman_image_build
         _build_required: "{{ _container.build_required | d(false) }}"
+        _build_dir: "{{ _container.build_dir if _container.build_dir is defined else omit }}"
         _container_name: "{{ _container.name }}"
         _containerfile_content: "{{ _container.containerfile_content }}"
         _image_name: "{{ _container.image.name }}"
@@ -196,7 +197,7 @@
         name: "{{ _container.name }}"
         # network_aliases: "{{ _container.hostname }}"
 # ToDo: enable multiple networks being defined to attach to a container; has to be list of network_names
-        network: "{{ _container.network | d(podman_network_name if pod_name | d('') is falsy else []) }}"
+        network: "{{ _container.network | d(podman_network_names if pod_name | d('') is falsy else []) }}"
         pod: "{{ _pod_file_name if _pod_file_name is truthy else omit }}"
         publish: "{{ _container.publish | default([]) }}"
         # recreate: "{{ podman_container_recreate | d(false) }}"
