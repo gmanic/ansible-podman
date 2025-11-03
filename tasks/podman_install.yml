@@ -203,6 +203,49 @@
     - {section: 'engine', option: 'events_logger', value: '"file"', state: 'present'}
     - {section: 'engine', option: 'network_cmd_options', value: '["mtu=20000"]', state: 'present'}
 
+# Add extra definition for ImageCopyTmpDir, if defined
+# (unfortunately, no loop over block possible)
+- name: Add changed ImageCopyTmpDir (if defined)
+  block:
+    - name: Ensure direcories exists
+      when: item.dest != ''
+      ansible.builtin.file:
+        path: "{{ item.dest }}"
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: "0o0755"
+        state: directory
+      loop:
+        - dest: "{{ podman_image_copy_tmp_dir_root if podman_image_copy_tmp_dir_root is defined else '' }}"
+          owner: "root"
+          group: "root"
+          conf: "/etc/containers/containers.conf"
+        - dest: "{{ podman_image_copy_tmp_dir_rootless if podman_image_copy_tmp_dir_rootless is defined else '' }}"
+          owner: "{{ podman_user }}"
+          group: "{{ podman_user }}"
+          conf: "{{ podman_user_home + '/.config/containers/containers.conf' }}"
+    - name: Install podman | Configure podman ImageCopyTmpDir
+      when: item.dest != ''
+      community.general.ini_file:
+        path: "{{ item.conf }}"
+        owner: "{{ item.owner }}"
+        group: "{{ item.owner }}"
+        mode: "0644"
+        section: "engine"
+        option: "env"
+        value: "['TMPDIR={{ item.dest }}']"
+        state: "present"
+        no_extra_spaces: false
+      loop:
+        - dest: "{{ podman_image_copy_tmp_dir_root if podman_image_copy_tmp_dir_root is defined else '' }}"
+          owner: "root"
+          group: "root"
+          conf: "/etc/containers/containers.conf"
+        - dest: "{{ podman_image_copy_tmp_dir_rootless if podman_image_copy_tmp_dir_rootless is defined else '' }}"
+          owner: "{{ podman_user }}"
+          group: "{{ podman_user }}"
+          conf: "{{ podman_user_home + '/.config/containers/containers.conf' }}"
+
 - name: Install podman | Prepare /etc/containers/storage.conf
   ansible.builtin.copy:
     dest: "{{ item }}"
