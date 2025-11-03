@@ -29,6 +29,9 @@ podman_packages:
 podman_system_prune: false
 podman_system_prune_min_free_gb: 5
 
+net_core_rmem_max: "7500000"
+net_core_wmem_max: "7500000"
+
 # podman_packages with copr
 # podman_packages:
 #   - aardvark-dns >= 1.11
