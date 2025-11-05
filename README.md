@@ -29,6 +29,9 @@ podman_operations:
 - podman_pod_create: creates a Podman pod to be used from other roles
 - podman_network_create: creates Podman networks as defined as dict in podman_networks automagically while creating containers or pod (if required). Of course, in proper context (rootful/rootless). Aside from podman itself defined networks no networks are created when installing podman.
 - podman_socket_create: creates a socket (systemd-unit) for a particular container (e.g. caddyserver to do networking rootless on host ports without networking involved)
+
+- ```podman_log_driver``` is available to define the podman logdriver for a rootless installation. It has ```k8s-file``` as default.
+- ```podman_image_copy_tmp_dir_root``` and ```podman_image_copy_tmp_dir_rootless``` can define another directory to circumvent size constraints on /var/tmp (rootless) for image building and image updates.
 ## Requirements
 
 None

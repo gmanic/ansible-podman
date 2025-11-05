@@ -199,7 +199,7 @@
     state: "{{ item.state }}"
     no_extra_spaces: false
   loop:
-    - {section: 'containers', option: 'log_driver', value: '"k8s-file"', state: 'present'}
+    - {section: 'containers', option: 'log_driver', value: '"{{ podman_log_driver }}"', state: 'present'}
     - {section: 'engine', option: 'events_logger', value: '"file"', state: 'present'}
     - {section: 'engine', option: 'network_cmd_options', value: '["mtu=20000"]', state: 'present'}
 
