@@ -207,8 +207,8 @@
           - |
             [Service]
             Restart=always
-            ExecStartPost={{ _container.service.execstartpost | d('') }}
-            TimeoutStartSec=900
+            ExecStartPost={{ _container.service.exec_start_post | d('') }}
+            TimeoutStartSec={{ _container.service.start_timeout | d('900') }}
             [Install]
             WantedBy=default.target
             {{ '[Unit]
