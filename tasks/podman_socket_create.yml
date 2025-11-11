@@ -49,4 +49,5 @@
         daemon_reload: true
         scope: "{{ 'user' if podman_rootless | d(true) | bool else 'system' }}"
         state: "restarted"
+        enabled: "true"
       when: _result.changed
